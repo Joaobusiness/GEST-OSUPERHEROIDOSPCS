@@ -1,0 +1,32 @@
+import { ActionForm, Field, Input, SubmitButton, Textarea } from "@/components/form";
+import { saveCustomerAction } from "@/server/crm-actions";
+import { addressText } from "@/server/crm";
+
+type C = { id: string; name: string; phone: string; whatsapp: string | null; document: string | null; email: string | null; address: unknown; notes: string | null; marketingConsent: boolean; marketingOptOut: boolean };
+
+export function CustomerForm({ c }: { c?: C }) {
+  return (
+    <ActionForm action={saveCustomerAction}>
+      {c && <input type="hidden" name="id" value={c.id} />}
+      <Field name="name" label="Nome"><Input name="name" defaultValue={c?.name} autoComplete="off" required /></Field>
+      <Field name="phone" label="Telefone" hint="Com DDD."><Input name="phone" type="tel" inputMode="tel" defaultValue={c?.phone} required /></Field>
+      <details className="grid gap-4" open={!!(c?.whatsapp || c?.document || c?.email || c?.address || c?.notes)}>
+        <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-[var(--accent)]">Mais dados (opcional)</summary>
+        <div className="grid gap-4">
+          <Field name="whatsapp" label="WhatsApp" hint="Deixe vazio se for o mesmo telefone."><Input name="whatsapp" type="tel" inputMode="tel" defaultValue={c?.whatsapp ?? ""} /></Field>
+          <Field name="document" label="CPF ou CNPJ"><Input name="document" inputMode="numeric" defaultValue={c?.document ?? ""} /></Field>
+          <Field name="email" label="E-mail"><Input name="email" type="email" defaultValue={c?.email ?? ""} /></Field>
+          <Field name="address" label="Endereço"><Input name="address" defaultValue={addressText(c?.address)} autoComplete="street-address" /></Field>
+          <Field name="notes" label="Observações"><Textarea name="notes" defaultValue={c?.notes ?? ""} /></Field>
+        </div>
+      </details>
+      <fieldset className="grid gap-1 border-t border-[var(--line)] pt-4">
+        <legend className="label pb-1">Mensagens de marketing (LGPD)</legend>
+        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="marketingConsent" defaultChecked={c?.marketingConsent} className="size-5 accent-[var(--accent)]" /> O cliente autorizou receber promoções</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="marketingOptOut" defaultChecked={c?.marketingOptOut} className="size-5 accent-[var(--accent)]" /> O cliente pediu para não receber marketing</label>
+        <p className="hint">Avisos do serviço (orçamento, garantia) não dependem disso.</p>
+      </fieldset>
+      <SubmitButton>Salvar cliente</SubmitButton>
+    </ActionForm>
+  );
+}

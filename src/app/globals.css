@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+/*
+  Design tokens. Every color, radius and shadow in the app comes from here.
+  Ground is daylight-light (technician on a phone, often outdoors); the brand
+  lives in the near-black bar that carries the logo, in the electric-blue
+  action color and in gold, reserved for money that is already yours.
+*/
+:root {
+  --ink: #0a0c10;
+  --ink-2: #14181f;
+  --ink-line: rgba(255, 255, 255, 0.12);
+  --on-ink: #f5f7fa;
+  --on-ink-2: #aab3c0;
+
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --line: rgba(10, 12, 16, 0.09);
+  --text: #12151b;
+  --text-2: #565e6b; /* 6.2:1 on --bg */
+  --text-3: #6b7380; /* 4.6:1 on --card */
+
+  --accent: #0a5cff; /* 5.7:1 on white */
+  --accent-press: #0847c4;
+  --accent-soft: #e8f0ff;
+  --glow: #3da5ff;
+
+  --gold: #f2b01e;
+  --gold-text: #7a5200; /* 6.1:1 on white */
+
+  --ok: #0f7b45;
+  --ok-soft: #e3f5ec;
+  --warn: #8a5a00;
+  --warn-soft: #fdf1d6;
+  --bad: #b42318;
+  --bad-soft: #fde8e6;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --shadow-1: 0 1px 2px rgba(10, 12, 16, 0.05), 0 4px 14px rgba(10, 12, 16, 0.05);
+  --shadow-2: 0 2px 4px rgba(10, 12, 16, 0.06), 0 14px 36px rgba(10, 12, 16, 0.12);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabbar-h: 64px;
+}
+
+/* Motion tokens: transitions.dev shared scale (.agents/skills/transitions-polish). Reference these, never literal ms. */
+:root {
+  /* Durations */
+  --duration-stagger: 40ms;  /* per-item stagger offset */
+  --duration-micro: 80ms;  /* tooltip/path delay, shake segment, large stagger */
+  --duration-quick: 150ms;  /* modal/dropdown close, text swap, tooltip appear */
+  --duration-fast: 250ms;  /* icon swap, dropdown/modal open, tabs sliding, page slide */
+  --duration-medium: 350ms;  /* panel close, toast close */
+  --duration-slow: 400ms;  /* panel open, skeleton content reveal, input clear */
+  --duration-very-slow: 500ms;  /* emphasis moments, badge appear, text reveal, success check */
+  /* Easings */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);  /* modal/dropdown/panel open + close, page slide, resize, position change */
+  --ease-in-out: ease-in-out;  /* icon swap, text swap, text reveal, skeleton reveal */
+  --ease-out: ease-out;  /* tooltip open / close */
+  --ease-linear: linear;  /* shimmer, skeleton pulse, spinner */
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);  /* badge pop open */
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1);  /* bouncy hover-out (avatar return) */
+  /* Distances */
+  --distance-micro: 4px;  /* text swap */
+  --distance-small: 6px;  /* error shake (small segment) */
+  --distance-base: 8px;  /* badge diagonal reveal, page slide, error shake (large segment) */
+  --distance-medium: 12px;  /* text reveal */
+  --distance-large: 30px;  /* check badge appear */
+  /* Scales */
+  --scale-large: 0.96;  /* modal open / close */
+  --scale-medium: 0.97;  /* dropdown open */
+  --scale-small: 0.98;  /* tooltip open */
+  --scale-tiny: 0.99;  /* dropdown close */
+  /* Blur */
+  --blur-small: 2px;  /* panel reveal, icon swap, text swap, skeleton reveal, number pop-in */
+  --blur-medium: 3px;  /* page slide, text reveal */
+  --blur-large: 8px;  /* success check open */
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-gold: var(--gold);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) { body { padding-bottom: 0; } }
+
+::selection { background: var(--accent); color: #fff; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+* { scrollbar-width: thin; scrollbar-color: rgba(10, 12, 16, 0.25) transparent; }
+input, textarea, select { caret-color: var(--accent); }
+
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.02em; line-height: 1.15; }
+h1 { font-size: 1.75rem; font-weight: 700; }
+h2 { font-size: 1.25rem; font-weight: 650; }
+h3 { font-size: 1.0625rem; font-weight: 600; }
+
+@layer components {
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-1); }
+  .card-pad { padding: 1.25rem; }
+  .card-ink { background: var(--ink); color: var(--on-ink); border-radius: var(--r-lg); box-shadow: var(--shadow-2); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    min-height: 48px; padding: 0 1.25rem; border-radius: 999px;
+    font-weight: 600; font-size: 1rem; line-height: 1; cursor: pointer;
+    border: 1px solid transparent; transition: transform var(--duration-quick) var(--ease-smooth-out), background-color var(--duration-quick) var(--ease-smooth-out), box-shadow var(--duration-quick) var(--ease-smooth-out);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 18px rgba(10, 92, 255, .28); }
+  .btn-primary:hover { background: var(--accent-press); }
+  .btn-quiet { background: var(--card); color: var(--text); border-color: var(--line); }
+  .btn-quiet:hover { background: var(--bg); }
+  .btn-danger { background: var(--bad-soft); color: var(--bad); }
+  .btn-sm { min-height: 40px; padding: 0 1rem; font-size: .9375rem; }
+
+  .field { display: grid; gap: .375rem; }
+  .label { font-size: .875rem; font-weight: 600; color: var(--text); }
+  .hint { font-size: .8125rem; color: var(--text-2); }
+  .err { font-size: .8125rem; color: var(--bad); font-weight: 500; }
+  .input {
+    width: 100%; min-height: 48px; padding: .625rem .875rem; font-size: 1rem; /* 16px stops iOS zoom */
+    background: var(--card); color: var(--text);
+    border: 1px solid rgba(10, 12, 16, 0.2); border-radius: var(--r-md);
+    transition: border-color var(--duration-quick) var(--ease-out), box-shadow var(--duration-quick) var(--ease-out);
+  }
+  textarea.input { min-height: 96px; resize: vertical; }
+  .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .input[aria-invalid="true"] { border-color: var(--bad); }
+  .input::placeholder { color: var(--text-3); }
+
+  .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .1875rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: var(--bg); color: var(--text-2); }
+  .chip-ok { background: var(--ok-soft); color: var(--ok); }
+  .chip-warn { background: var(--warn-soft); color: var(--warn); }
+  .chip-bad { background: var(--bad-soft); color: var(--bad); }
+  .chip-accent { background: var(--accent-soft); color: var(--accent-press); }
+
+  .list-row { display: flex; align-items: center; gap: .875rem; padding: .875rem 1.25rem; min-height: 64px; }
+  .list-row + .list-row { border-top: 1px solid var(--line); }
+  .list-row:active { background: var(--bg); }
+
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .skeleton { background: linear-gradient(90deg, #e9ebef 25%, #f3f4f6 50%, #e9ebef 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-md); }
+}
+
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise var(--duration-very-slow) var(--ease-smooth-out) both; }
+.rise-2 { animation-delay: .06s; }
+.rise-3 { animation-delay: .12s; }
+/* transitions.dev #12 error shake: the field that failed validation shakes once. */
+.input.is-shaking { animation: t-shake calc(var(--duration-micro) * 2 + 60ms * 2) linear; }
+@keyframes t-shake {
+  0%     { transform: translateX(0);                              animation-timing-function: var(--ease-smooth-out); }
+  28.57% { transform: translateX(var(--distance-small));          animation-timing-function: var(--ease-smooth-out); }
+  57.14% { transform: translateX(calc(var(--distance-small) * -1)); animation-timing-function: var(--ease-smooth-out); }
+  78.57% { transform: translateX(4px);                            animation-timing-function: var(--ease-smooth-out); }
+  100%   { transform: translateX(0); }
+}
+/* transitions.dev #22 toast: form feedback messages ease in from below with a soft blur. */
+@keyframes t-toast-in {
+  from { opacity: 0; transform: translateY(var(--distance-base)) scale(var(--scale-small)); filter: blur(var(--blur-small)); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+.t-toast-in { animation: t-toast-in var(--duration-fast) var(--ease-smooth-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .input.is-shaking, .t-toast-in { animation: none !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
