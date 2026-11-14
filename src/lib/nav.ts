@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Calculator, Wallet, Megaphone, BarChart3, Settings, type LucideIcon } from "lucide-react";
+import { Home, Users, FileText, Calculator, Wallet, Megaphone, BarChart3, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; tab?: boolean };
 
@@ -12,3 +12,6 @@ export const NAV: NavItem[] = [
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
+
+/** Only shown to the platform owner (isSuperAdmin); the pages re-check on the server. */
+export const ADMIN_ITEM: NavItem = { href: "/admin", label: "Administração", icon: ShieldCheck };
