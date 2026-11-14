@@ -4,7 +4,7 @@ import { ActionForm, Field, Input, Select, SubmitButton } from "@/components/for
 import { requireAuth } from "@/server/auth";
 import { TIMEZONES, listTeam } from "@/server/settings";
 import { addMemberAction, removeMemberAction, updateBusinessAction, updatePricingSettingsAction } from "@/server/settings-actions";
-import { ConfirmButton } from "@/app/admin/confirm-button";
+import { ConfirmButton } from "@/app/(app)/admin/confirm-button";
 import { formatPhone } from "@/lib/br";
 import { LogoCard } from "./logo-card";
 

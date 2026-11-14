@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
-import { NAV } from "@/lib/nav";
+import { ADMIN_ITEM, NAV } from "@/lib/nav";
 
 const active = (path: string, href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
-export function SideNav() {
+export function SideNav({ admin = false }: { admin?: boolean }) {
   const path = usePathname();
+  const items = admin ? [...NAV, ADMIN_ITEM] : NAV;
   return (
     <nav aria-label="Principal" className="grid gap-1">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const on = active(path, href);
         return (
           <Link key={href} href={href} aria-current={on ? "page" : undefined}
