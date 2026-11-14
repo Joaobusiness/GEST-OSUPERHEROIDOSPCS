@@ -46,10 +46,12 @@ export async function requireAuth() {
   const s = await getSession();
   // the "expired" notice only makes sense when there was a cookie; a first visit goes to a clean login
   if (!s) redirect((await cookies()).has(COOKIE) ? "/login?sessao=expirada" : "/login");
-  if (!s.tenantId) redirect(s.user.isSuperAdmin ? "/admin" : "/login");
+  // sessions created before the user had a company carry no tenantId: use their membership instead of looping
+  const tenantId = s.tenantId ?? (await prisma.tenantUser.findFirst({ where: { userId: s.userId }, select: { tenantId: true } }))?.tenantId;
+  if (!tenantId) redirect("/login");
   const [tenant, membership] = await Promise.all([
-    prisma.tenant.findUnique({ where: { id: s.tenantId } }),
-    prisma.tenantUser.findUnique({ where: { tenantId_userId: { tenantId: s.tenantId, userId: s.userId } } }),
+    prisma.tenant.findUnique({ where: { id: tenantId } }),
+    prisma.tenantUser.findUnique({ where: { tenantId_userId: { tenantId, userId: s.userId } } }),
   ]);
   if (!tenant || !membership) redirect("/login");
   if (tenant.status === "SUSPENDED") redirect("/suspenso");
