@@ -48,10 +48,29 @@ export function Empty({ title, text, href, cta }: { title: string; text: string;
   );
 }
 
-export function Skeleton({ rows = 4 }: { rows?: number }) {
+/** Preloader: imita o layout real (cabeçalho + linhas com avatar, texto e valor) para a página não "pular" quando o conteúdo chega. Só aparece após 150ms, então navegação rápida não pisca. */
+export function Skeleton({ rows = 4, header = false }: { rows?: number; header?: boolean }) {
   return (
-    <div className="card grid gap-px overflow-hidden" aria-busy="true" aria-label="Carregando">
-      {Array.from({ length: rows }, (_, i) => <div key={i} className="skeleton !rounded-none h-16" />)}
+    <div role="status" className="skeleton-wrap grid gap-4">
+      <span className="sr-only">Carregando…</span>
+      {header && (
+        <div className="grid gap-2 pb-3 pt-2" aria-hidden>
+          <div className="skeleton h-8 w-44 max-w-full" />
+          <div className="skeleton h-4 w-64 max-w-full" />
+        </div>
+      )}
+      <div className="card divide-y divide-[var(--line)] overflow-hidden" aria-hidden>
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex items-center gap-3 p-4">
+            <div className="skeleton size-11 shrink-0 !rounded-[14px]" />
+            <div className="grid min-w-0 flex-1 gap-2">
+              <div className="skeleton h-4 w-2/5" />
+              <div className="skeleton h-3.5 w-3/5" />
+            </div>
+            <div className="skeleton h-4 w-16 shrink-0" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
