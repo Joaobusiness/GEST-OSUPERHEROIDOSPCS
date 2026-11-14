@@ -339,7 +339,7 @@ export async function cashSummary(db: TenantDb, period: Period, tz = TZ) {
 }
 
 export interface TxFilter {
-  type?: string; status?: string; categoryId?: string; q?: string; overdue?: boolean; page?: number; pageSize?: number;
+  type?: string; status?: string; categoryId?: string; q?: string; overdue?: boolean; paid?: boolean; open?: boolean; page?: number; pageSize?: number;
 }
 
 function txWhere(period: Period, f: TxFilter, tz = TZ): Prisma.FinancialTransactionWhereInput {
@@ -351,6 +351,12 @@ function txWhere(period: Period, f: TxFilter, tz = TZ): Prisma.FinancialTransact
   if (f.overdue) {
     where.status = "PENDING";
     where.dueDate = { lt: todayDate(tz) };
+  } else if (f.paid) {
+    // cards "Recebido"/"Pago": tudo que teve pagamento no período, mesmo parcial
+    where.payments = { some: { paidAt: cashRange(period) } };
+  } else if (f.open) {
+    // cards "A receber"/"A pagar": o que ainda falta, de qualquer data
+    where.status = "PENDING";
   } else {
     // due in the period, or touched by a payment in the period
     where.OR = [{ dueDate: { gte: period.dFrom, lt: period.dTo } }, { payments: { some: { paidAt: cashRange(period) } } }];

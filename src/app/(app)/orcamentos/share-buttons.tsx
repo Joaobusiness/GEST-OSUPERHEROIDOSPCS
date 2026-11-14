@@ -13,5 +13,5 @@ export function WhatsAppButton({ href, quoteId, markSent }: { href: string; quot
 }
 
 export function PrintButton() {
-  return <button type="button" className="btn btn-primary print:hidden" onClick={() => window.print()}><Printer size={18} aria-hidden /> Imprimir ou salvar PDF</button>;
+  return <button type="button" className="btn btn-primary print:hidden" onClick={() => window.print()}><Printer size={18} aria-hidden /> Baixar PDF</button>;
 }

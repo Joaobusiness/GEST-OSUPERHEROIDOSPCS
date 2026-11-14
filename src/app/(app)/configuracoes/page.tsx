@@ -6,6 +6,7 @@ import { TIMEZONES, listTeam } from "@/server/settings";
 import { addMemberAction, removeMemberAction, updateBusinessAction, updatePricingSettingsAction } from "@/server/settings-actions";
 import { ConfirmButton } from "@/app/admin/confirm-button";
 import { formatPhone } from "@/lib/br";
+import { LogoCard } from "./logo-card";
 
 export const metadata = { title: "Configurações" };
 
@@ -23,7 +24,7 @@ export default async function Page() {
 
   return (
     <>
-      <PageHeader title="Configurações" sub={isAdmin ? "Dados da empresa, padrões de preço e equipe." : "Somente administradores podem alterar. Você pode consultar."} />
+      <PageHeader title="Configurações" sub={isAdmin ? "Dados da empresa, preço e equipe." : "Só quem é administrador pode mudar. Você pode ver tudo."} />
       <div className="grid gap-6">
         <section className="card card-pad grid gap-4">
           <h2>Empresa</h2>
@@ -58,48 +59,41 @@ export default async function Page() {
           </ActionForm>
         </section>
 
+        <LogoCard current={tenant.logoUrl ?? ""} isAdmin={isAdmin} />
+
         <section className="card card-pad grid gap-4">
           <div>
-            <h2>Preço e relacionamento</h2>
-            <p className="hint mt-1">Estes padrões valem para novos orçamentos e simulações. Orçamentos aprovados não mudam.</p>
+            <h2>Preço e clientes</h2>
+            <p className="hint mt-1">Valem para novos orçamentos e contas. Orçamentos já aprovados não mudam.</p>
           </div>
           {st && (
             <ActionForm action={updatePricingSettingsAction}>
               <fieldset disabled={!isAdmin} className="grid gap-4 border-0 p-0">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Field name="partMarginPct" label="Margem de peças (%)"><Input name="partMarginPct" inputMode="decimal" defaultValue={v(st.partMarginPct)} /></Field>
-                  <Field name="laborMarginPct" label="Margem de mão de obra (%)"><Input name="laborMarginPct" inputMode="decimal" defaultValue={v(st.laborMarginPct)} /></Field>
-                  <Field name="minMarginPct" label="Margem mínima (%)" hint="Abaixo disso você recebe um aviso."><Input name="minMarginPct" inputMode="decimal" defaultValue={v(st.minMarginPct)} /></Field>
-                  <Field name="taxPct" label="Imposto (%)"><Input name="taxPct" inputMode="decimal" defaultValue={v(st.taxPct)} /></Field>
-                  <Field name="cardFeePct" label="Taxa do cartão (%)"><Input name="cardFeePct" inputMode="decimal" defaultValue={v(st.cardFeePct)} /></Field>
-                  <Field name="otherCostsFixed" label="Outros custos fixos (R$)"><Input name="otherCostsFixed" inputMode="decimal" defaultValue={v(st.otherCostsFixed)} /></Field>
-                  <Field name="defaultUberCost" label="Uber padrão (R$)"><Input name="defaultUberCost" inputMode="decimal" defaultValue={v(st.defaultUberCost)} /></Field>
-                  <Field name="defaultUberMode" label="Cobrança do Uber">
+                  <Field name="partMarginPct" label="Margem de lucro (%)" hint="Usada como ponto de partida na Precificação."><Input name="partMarginPct" inputMode="decimal" defaultValue={v(st.partMarginPct)} /></Field>
+                                                                                                            <Field name="defaultUberCost" label="Custo médio do Uber (R$)"><Input name="defaultUberCost" inputMode="decimal" defaultValue={v(st.defaultUberCost)} /></Field>
+                  <Field name="defaultUberMode" label="Como cobrar o Uber">
                     <Select name="defaultUberMode" defaultValue={st.defaultUberMode}>
-                      <option value="INCLUDED">Incluído no preço</option>
-                      <option value="SEPARATE">Cobrado separado</option>
-                      <option value="ABSORBED">Absorvido por mim</option>
+                      <option value="INCLUDED">Dentro do preço</option>
+                      <option value="SEPARATE">Linha separada</option>
+                      <option value="ABSORBED">Eu pago, não cobro</option>
                     </Select>
                   </Field>
                 </div>
-                <label className="flex min-h-11 items-center gap-3 text-[0.9375rem]">
-                  <input type="checkbox" name="uberMarkup" className="size-5 accent-[var(--accent)]" defaultChecked={st.uberMarkup} />
-                  <span>Uber cobrado separado com margem (desmarcado: repasse puro)</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field name="inactiveDays" label="Cliente inativo após (dias)"><Input name="inactiveDays" inputMode="numeric" defaultValue={st.inactiveDays} /></Field>
-                  <Field name="warrantyAlertDays" label="Avisar garantia (dias antes)"><Input name="warrantyAlertDays" inputMode="numeric" defaultValue={st.warrantyAlertDays} /></Field>
+                                <div className="grid grid-cols-2 gap-3">
+                  <Field name="inactiveDays" label="Cliente sumido depois de (dias)"><Input name="inactiveDays" inputMode="numeric" defaultValue={st.inactiveDays} /></Field>
+                  <Field name="warrantyAlertDays" label="Avisar da garantia (dias antes)"><Input name="warrantyAlertDays" inputMode="numeric" defaultValue={st.warrantyAlertDays} /></Field>
                 </div>
-                {isAdmin && <SubmitButton>Salvar padrões</SubmitButton>}
+                {isAdmin && <SubmitButton>Salvar</SubmitButton>}
               </fieldset>
             </ActionForm>
           )}
         </section>
 
-        <section className="card grid overflow-hidden">
-          <div className="card-pad grid gap-1 pb-3"><h2>Equipe</h2><p className="hint">Administradores alteram configurações. Membros só consultam.</p></div>
+        <section className="card grid grid-cols-[minmax(0,1fr)] overflow-hidden">
+          <div className="card-pad grid gap-1 pb-3"><h2>Equipe</h2><p className="hint">Administradores mudam as configurações. Membros só consultam.</p></div>
           {team.map((m) => (
-            <div key={m.userId} className="list-row">
+            <div key={m.userId} className="list-row flex-wrap">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{m.name}</p>
                 <p className="truncate text-sm text-[var(--text-2)]">{m.email}</p>
@@ -128,7 +122,7 @@ export default async function Page() {
 
         <section className="card card-pad grid gap-2">
           <h2>Privacidade (LGPD)</h2>
-          <p className="hint">Você trata dados de clientes. Marketing só com consentimento registrado.</p>
+          <p className="hint">Você guarda dados dos seus clientes. Só mande promoções para quem aceitou receber.</p>
           <div className="flex flex-wrap gap-x-6">
             <Link href="/privacidade" className="inline-flex min-h-11 items-center font-semibold text-[var(--accent)]">Política de privacidade</Link>
             <Link href="/termos" className="inline-flex min-h-11 items-center font-semibold text-[var(--accent)]">Termos de uso</Link>

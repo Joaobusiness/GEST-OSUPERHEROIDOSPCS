@@ -8,15 +8,56 @@ import { PrintButton } from "../../share-buttons";
 
 export const metadata = { title: "Orçamento" };
 
-// The app shell (bars, tab bar) is hidden on paper; A4 margins come from @page.
+// The app shell is hidden on paper; A4 margins come from @page.
 const PRINT_CSS = `
 @page { size: A4; margin: 14mm; }
 @media print {
   aside, nav, header { display: none !important; }
-  body { background: #fff !important; padding: 0 !important; }
+  body { background: #fff !important; }
   main { max-width: none !important; padding: 0 !important; }
-  .sheet { box-shadow: none !important; border: 0 !important; padding: 0 !important; }
+  .paper-wrap { background: none !important; padding: 0 !important; border-radius: 0 !important; }
+  .paper { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }`;
+
+type Addr = { street?: string; number?: string; district?: string; city?: string; state?: string; zip?: string };
+const addrLine = (a: unknown) => {
+  const x = (a ?? {}) as Addr;
+  return [[x.street, x.number].filter(Boolean).join(", "), x.district, [x.city, x.state].filter(Boolean).join("/")].filter(Boolean).join(" - ");
+};
+
+type Row = { id: string; description: string; quantity: { toString(): string }; unitPrice: { toString(): string } };
+
+function ItemsTable({ title, rows }: { title: string; rows: Row[] }) {
+  if (!rows.length) return null;
+  const sub = rows.reduce((a, i) => a.plus(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2)), dec(0));
+  return (
+    <section className="break-inside-avoid">
+      <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">{title}</h2>
+      <table className="w-full table-fixed text-left text-[0.9375rem]">
+        <thead>
+          <tr className="border-b-2 border-[var(--accent)] text-xs uppercase tracking-wide text-[var(--text-2)]">
+            <th className="py-2 pr-2 font-semibold">Descrição</th>
+            <th className="w-12 px-1 text-right font-semibold sm:w-16">Qtd.</th>
+            <th className="w-20 px-1 text-right font-semibold sm:w-28">Unitário</th>
+            <th className="w-20 pl-1 text-right font-semibold sm:w-28">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((i) => (
+            <tr key={i.id} className="break-inside-avoid border-b border-[var(--line)] align-top">
+              <td className="break-words py-2.5 pr-2">{i.description}</td>
+              <td className="num px-1 py-2.5 text-right">{i.quantity.toString()}</td>
+              <td className="num px-1 py-2.5 text-right">{money(i.unitPrice as never)}</td>
+              <td className="num py-2.5 pl-1 text-right font-semibold">{money(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2))}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot><tr><td colSpan={3} className="pt-2 text-right text-sm text-[var(--text-2)]">Subtotal</td><td className="num pt-2 text-right font-semibold">{money(sub)}</td></tr></tfoot>
+      </table>
+    </section>
+  );
+}
 
 export default async function PrintQuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,60 +67,84 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
   if (!q) notFound();
   const tz = tenant.timezone;
   const uber = uberCharge(q, q);
-  const contact = [tenant.phone && formatPhone(tenant.phone), tenant.whatsapp && tenant.whatsapp !== tenant.phone ? `WhatsApp ${formatPhone(tenant.whatsapp)}` : null, tenant.email].filter(Boolean).join("  |  ");
+  const services = q.items.filter((i) => i.kind !== "PART");
+  const products = q.items.filter((i) => i.kind === "PART");
+  const phones = [tenant.phone && formatPhone(tenant.phone), tenant.whatsapp && tenant.whatsapp !== tenant.phone ? `WhatsApp ${formatPhone(tenant.whatsapp)}` : null].filter(Boolean);
+  const company = [phones.join("  |  "), tenant.email, addrLine(tenant.address)].filter(Boolean);
+  const cust = [formatPhone(q.customer.whatsapp || q.customer.phone), q.customer.email, q.customer.document, addrLine(q.customer.address)].filter(Boolean);
+  const terms: [string, string][] = [
+    ["Validade", q.validUntil ? dateBR(q.validUntil, tz) : "A combinar"],
+    ...(q.executionDays != null ? [["Prazo", `${q.executionDays} dias`] as [string, string]] : []),
+    ...(q.paymentTerms ? [["Pagamento", q.paymentTerms] as [string, string]] : []),
+    ...(q.warranty ? [["Garantia", q.warranty] as [string, string]] : []),
+  ];
 
   return (
     <>
       <style>{PRINT_CSS}</style>
-      <div className="mb-4 print:hidden"><PrintButton /></div>
-      <article className="sheet card card-pad grid gap-6 !bg-white">
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] pb-4">
-          <div className="min-w-0">
-            <h1 className="!text-2xl">{tenant.name}</h1>
-            {tenant.document && <p className="text-sm text-[var(--text-2)]">{tenant.document}</p>}
-            <p className="text-sm text-[var(--text-2)]">{contact}</p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-lg font-bold">Orçamento {q.number}</p>
-            <p className="text-sm text-[var(--text-2)]">Revisão {q.revision}</p>
-            <p className="text-sm text-[var(--text-2)]">{dateBR(q.createdAt, tz)}</p>
-          </div>
-        </div>
+      <div className="mx-auto mb-4 flex max-w-[794px] items-center justify-between gap-3 print:hidden">
+        <p className="text-sm text-[var(--text-2)]">Na janela que abrir, escolha &quot;Salvar como PDF&quot;.</p>
+        <PrintButton />
+      </div>
+      <div className="paper-wrap rounded-[var(--r-lg)] bg-[var(--line)] p-2 sm:p-6">
+        <article className="paper mx-auto grid max-w-[794px] gap-7 bg-white p-5 text-[var(--ink)] shadow-[var(--shadow-2)] sm:p-10">
+          <header className="grid gap-4 border-b-4 border-[var(--accent)] pb-5 sm:grid-cols-[1fr_auto] sm:items-start">
+            <div className="grid min-w-0 gap-3">
+              {tenant.logoUrl
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={tenant.logoUrl} alt={tenant.name} className="max-h-20 w-auto max-w-[240px] object-contain object-left" />
+                : <p className="break-words text-3xl font-extrabold leading-tight tracking-tight">{tenant.name}</p>}
+              <div className="grid gap-0.5 text-sm text-[var(--text-2)]">
+                {tenant.logoUrl && <p className="font-semibold text-[var(--ink)]">{tenant.name}</p>}
+                {tenant.document && <p>{tenant.document}</p>}
+                {company.map((c) => <p key={c} className="break-words">{c}</p>)}
+              </div>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Orçamento</p>
+              <p className="num text-2xl font-extrabold">{q.number}</p>
+              <p className="mt-1 text-sm text-[var(--text-2)]">Emitido em {dateBR(q.createdAt, tz)}</p>
+              <p className="text-sm text-[var(--text-2)]">Válido até {q.validUntil ? dateBR(q.validUntil, tz) : "a combinar"}</p>
+            </div>
+          </header>
 
-        <div className="text-[0.9375rem]">
-          <p className="hint">Cliente</p>
-          <p className="font-semibold">{q.customer.name}</p>
-          <p className="text-[var(--text-2)]">{formatPhone(q.customer.whatsapp || q.customer.phone)}{q.customer.email ? `  |  ${q.customer.email}` : ""}</p>
-        </div>
+          <section className="break-inside-avoid rounded-[var(--r-md)] bg-[var(--bg)] p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Para</p>
+            <p className="mt-1 text-lg font-bold">{q.customer.name}</p>
+            <div className="text-sm text-[var(--text-2)]">{cust.map((c) => <p key={c} className="break-words">{c}</p>)}</div>
+          </section>
 
-        <table className="w-full text-left text-[0.9375rem]">
-          <thead><tr className="border-b border-[var(--line)] text-sm text-[var(--text-2)]">
-            <th className="py-2 pr-2 font-semibold">Descrição</th><th className="px-2 text-right font-semibold">Qtd.</th><th className="px-2 text-right font-semibold">Unitário</th><th className="pl-2 text-right font-semibold">Total</th>
-          </tr></thead>
-          <tbody>
-            {q.items.map((i) => (
-              <tr key={i.id} className="border-b border-[var(--line)] align-top">
-                <td className="py-2 pr-2">{i.description}</td>
-                <td className="num px-2 py-2 text-right">{i.quantity.toString()}</td>
-                <td className="num px-2 py-2 text-right">{money(i.unitPrice)}</td>
-                <td className="num py-2 pl-2 text-right font-medium">{money(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2))}</td>
-              </tr>
-            ))}
-            {uber.gt(0) && <tr className="border-b border-[var(--line)]"><td className="py-2" colSpan={3}>Deslocamento</td><td className="num py-2 text-right font-medium">{money(uber)}</td></tr>}
-            {q.extraFee.gt(0) && <tr className="border-b border-[var(--line)]"><td className="py-2" colSpan={3}>Taxa extra</td><td className="num py-2 text-right font-medium">{money(q.extraFee)}</td></tr>}
-            {q.discount.gt(0) && <tr className="border-b border-[var(--line)]"><td className="py-2" colSpan={3}>Desconto</td><td className="num py-2 text-right font-medium">- {money(q.discount)}</td></tr>}
-          </tbody>
-          <tfoot><tr><td className="pt-3 text-lg font-bold" colSpan={3}>Total</td><td className="num pt-3 text-right text-lg font-bold">{money(q.totalAmount)}</td></tr></tfoot>
-        </table>
+          <ItemsTable title="Serviços" rows={services} />
+          <ItemsTable title="Produtos e peças" rows={products} />
 
-        <dl className="grid gap-1.5 text-[0.9375rem]">
-          <div><dt className="inline font-semibold">Validade: </dt><dd className="inline">{q.validUntil ? dateBR(q.validUntil, tz) : "a combinar"}</dd></div>
-          {q.executionDays != null && <div><dt className="inline font-semibold">Prazo de execução: </dt><dd className="inline">{q.executionDays} dias</dd></div>}
-          {q.paymentTerms && <div><dt className="inline font-semibold">Pagamento: </dt><dd className="inline">{q.paymentTerms}</dd></div>}
-          {q.warranty && <div><dt className="inline font-semibold">Garantia: </dt><dd className="inline">{q.warranty}</dd></div>}
-          {q.notes && <div><dt className="inline font-semibold">Observações: </dt><dd className="inline">{q.notes}</dd></div>}
-        </dl>
-      </article>
+          <section className="break-inside-avoid ml-auto grid w-full gap-1.5 text-[0.9375rem] sm:w-80">
+            {uber.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Deslocamento</span><span className="num font-semibold">{money(uber)}</span></p>}
+            {q.extraFee.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Taxa extra</span><span className="num font-semibold">{money(q.extraFee)}</span></p>}
+            {q.discount.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Desconto</span><span className="num font-semibold">- {money(q.discount)}</span></p>}
+            <p className="mt-2 flex items-baseline justify-between gap-3 rounded-[var(--r-md)] bg-[var(--accent)] px-4 py-3 text-white">
+              <span className="text-sm font-bold uppercase tracking-wide">Total</span><span className="num text-2xl font-extrabold">{money(q.totalAmount)}</span>
+            </p>
+          </section>
+
+          {q.notes && (
+            <section className="break-inside-avoid">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Explicação do serviço</h2>
+              <p className="whitespace-pre-line break-words border-l-4 border-[var(--accent)] pl-4 text-base leading-relaxed">{q.notes}</p>
+            </section>
+          )}
+
+          <section className="break-inside-avoid">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Condições</h2>
+            <dl className="grid gap-x-6 gap-y-2 text-[0.9375rem] sm:grid-cols-2">
+              {terms.map(([k, v]) => <div key={k}><dt className="text-xs uppercase tracking-wide text-[var(--text-2)]">{k}</dt><dd className="break-words font-medium">{v}</dd></div>)}
+            </dl>
+          </section>
+
+          <footer className="break-inside-avoid border-t border-[var(--line)] pt-4 text-center text-sm text-[var(--text-2)]">
+            Obrigado pela confiança! Qualquer dúvida, fale com a {tenant.name}.
+          </footer>
+        </article>
+      </div>
     </>
   );
 }

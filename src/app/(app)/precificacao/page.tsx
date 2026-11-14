@@ -16,20 +16,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
     db.pricingSettings.findUnique({ where: { tenantId } }),
     sim && UUID.test(sim) ? db.pricingSimulation.findFirst({ where: { id: sim } }) : null,
   ]);
+  // MVP: só margem e Uber. Imposto, cartão, outros custos e preço manual ficam zerados.
   const defaults: SimInput = {
     partCost: "", laborCost: "", laborPrice: "", uberCost: st?.defaultUberCost.toString() ?? "0", uberMode: st?.defaultUberMode ?? "INCLUDED",
-    uberMarkup: st?.uberMarkup ?? false, otherCosts: st?.otherCostsFixed.toString() ?? "0", fixedFees: "",
-    marginPct: st?.partMarginPct.toString() ?? "40", taxPct: st?.taxPct.toString() ?? "0", cardFeePct: st?.cardFeePct.toString() ?? "0", manualPrice: "",
+    uberMarkup: false, otherCosts: "0", fixedFees: "", marginPct: st?.partMarginPct.toString() ?? "40", taxPct: "0", cardFeePct: "0", manualPrice: "",
   };
-  const initial = saved ? { ...defaults, ...(saved.input as Partial<SimInput>) } : defaults;
+  const initial = saved ? { ...defaults, ...(saved.input as Partial<SimInput>), laborPrice: "", uberMarkup: false, otherCosts: "0", fixedFees: "", taxPct: "0", cardFeePct: "0", manualPrice: "" } : defaults;
   return (
     <>
       <PageHeader
         title="Precificação"
-        sub={saved ? `Recalculando: ${saved.label ?? "simulação salva"}` : "Descubra o preço certo antes de fechar o serviço."}
+        sub={saved ? `Refazendo: ${saved.label ?? "simulação guardada"}` : "Veja quanto cobrar para ficar com o lucro que você quer."}
         action={<Link href="/precificacao/historico" className="btn btn-quiet btn-sm"><History size={18} aria-hidden /> Histórico</Link>}
       />
-      <Calculator key={saved?.id ?? "new"} initial={initial} minMarginPct={st?.minMarginPct.toString() ?? "20"} />
+      <Calculator key={saved?.id ?? "new"} initial={initial} />
     </>
   );
 }

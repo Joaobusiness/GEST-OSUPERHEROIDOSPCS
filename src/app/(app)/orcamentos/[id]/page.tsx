@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileDown, Pencil, Wrench } from "lucide-react";
+import { FileDown, Pencil } from "lucide-react";
 import { ActionForm, Field, Select, SubmitButton } from "@/components/form";
 import { PageHeader, QUOTE_STATUS, Status, dateBR, money } from "@/components/ui";
 import { uuid } from "@/lib/action";
 import { whatsappLink } from "@/lib/br";
 import { requireAuth } from "@/server/auth";
 import { dec, uberCharge } from "@/server/line-items";
-import { approveAction, cancelAction, convertAction, rejectAction } from "@/server/quotes-actions";
+import { approveAction, cancelAction, rejectAction } from "@/server/quotes-actions";
 import { WhatsAppButton } from "../share-buttons";
 
 const KIND = { PART: "Peça", LABOR: "Mão de obra", OTHER: "Outro" };
@@ -17,7 +17,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const { rev } = await searchParams;
   if (!uuid.safeParse(id).success) notFound();
   const { db, tenant } = await requireAuth();
-  const q = await db.quote.findFirst({ where: { id }, include: { customer: true, items: { orderBy: { id: "asc" } }, serviceOrder: { select: { id: true, orderNumber: true } } } });
+  const q = await db.quote.findFirst({ where: { id }, include: { customer: true, items: { orderBy: { id: "asc" } } } });
   if (!q) notFound();
   const revisions = await db.quote.findMany({ where: { number: q.number }, orderBy: { revision: "desc" }, select: { id: true, revision: true, status: true } });
   const tz = tenant.timezone;
@@ -65,9 +65,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           {q.executionDays != null && <p><span className="text-[var(--text-2)]">Prazo:</span> {q.executionDays} dias</p>}
           {q.paymentTerms && <p><span className="text-[var(--text-2)]">Pagamento:</span> {q.paymentTerms}</p>}
           {q.warranty && <p><span className="text-[var(--text-2)]">Garantia:</span> {q.warranty}</p>}
-          {q.notes && <p><span className="text-[var(--text-2)]">Observações:</span> {q.notes}</p>}
+          {q.notes && <p><span className="text-[var(--text-2)]">Explicação:</span> {q.notes}</p>}
           {q.decidedAt && <p><span className="text-[var(--text-2)]">Decidido em:</span> {dateBR(q.decidedAt, tz)}{q.approvalMethod ? `, ${q.approvalMethod}` : ""}</p>}
-          {q.serviceOrder && <p><span className="text-[var(--text-2)]">OS:</span> <Link className="text-[var(--accent)] underline underline-offset-2" href={`/ordens/${q.serviceOrder.id}`}>{q.serviceOrder.orderNumber}</Link></p>}
         </section>
 
         <section className="card card-pad grid gap-3" aria-label="Ações">
@@ -85,9 +84,6 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               <SubmitButton>Registrar aprovação</SubmitButton>
             </ActionForm>
           )}
-          {q.status === "APPROVED" && (q.serviceOrder
-            ? <Link href={`/ordens/${q.serviceOrder.id}`} className="btn btn-quiet"><Wrench size={18} aria-hidden /> Abrir {q.serviceOrder.orderNumber}</Link>
-            : <ActionForm action={convertAction}><input type="hidden" name="id" value={q.id} /><SubmitButton className="btn btn-primary" pendingText="Criando OS…"><Wrench size={18} aria-hidden /> Converter em OS</SubmitButton></ActionForm>)}
           <div className="grid grid-cols-2 gap-3">
             {open && <ActionForm action={rejectAction}><input type="hidden" name="id" value={q.id} /><SubmitButton className="btn btn-quiet w-full">Marcar recusado</SubmitButton></ActionForm>}
             {(open || q.status === "APPROVED") && <ActionForm action={cancelAction}><input type="hidden" name="id" value={q.id} /><SubmitButton className="btn btn-danger w-full">Cancelar</SubmitButton></ActionForm>}

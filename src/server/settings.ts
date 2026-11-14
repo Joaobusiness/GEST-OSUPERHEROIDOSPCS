@@ -42,8 +42,9 @@ export const businessSchema = z.object({
 });
 
 export const pricingSchema = z.object({
-  partMarginPct: pctStr, laborMarginPct: pctStr, minMarginPct: pctStr, cardFeePct: pctStr, taxPct: pctStr,
-  defaultUberCost: moneyStr, otherCostsFixed: moneyStr,
+  partMarginPct: pctStr, defaultUberCost: moneyStr,
+  // Fora do MVP: o formulário não envia mais. Seguem opcionais para não apagar o que já está salvo.
+  laborMarginPct: pctStr.optional(), minMarginPct: pctStr.optional(), cardFeePct: pctStr.optional(), taxPct: pctStr.optional(), otherCostsFixed: moneyStr.optional(),
   defaultUberMode: z.enum(["INCLUDED", "SEPARATE", "ABSORBED"]),
   uberMarkup: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
   inactiveDays: z.coerce.number().int("Use um número inteiro.").min(1, "Mínimo 1 dia.").max(3650),
@@ -100,4 +101,13 @@ export async function removeMember(c: Ctx, userId: string) {
   await c.db.session.deleteMany({ where: { userId, tenantId: c.tenantId } });
   const other = await c.db.tenantUser.count({ where: { userId } });
   if (other === 0 && !target.user.isSuperAdmin) await c.db.user.delete({ where: { id: userId } });
+}
+
+const LOGO_PREFIX = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+export const logoSchema = z.object({ logo: z.string().max(400_000, "Imagem grande demais.").refine((s) => s === "" || LOGO_PREFIX.test(s), "Use uma imagem PNG, JPG ou WebP.") });
+
+/** Empty string removes the logo. */
+export async function updateLogo(c: Ctx, logo: string) {
+  assertAdmin(c);
+  await c.db.tenant.update({ where: { id: c.tenantId }, data: { logoUrl: logo || null } });
 }

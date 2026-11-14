@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Empty, PageHeader } from "@/components/ui";
@@ -23,9 +24,10 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
           ? <Empty title="Nenhum cliente encontrado" text={`Nada para "${q}". Confira o nome ou o número.`} href="/clientes" cta="Limpar busca" />
           : <Empty title="Nenhum cliente ainda" text="Cadastre o primeiro cliente com nome e telefone. O resto pode vir depois." href="/clientes/novo" cta="Cadastrar cliente" />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card stagger overflow-hidden">
           {customers.map((c) => (
             <Link key={c.id} href={`/clientes/${c.id}`} className="list-row">
+              <Avatar name={c.name} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{c.name}</p>
                 <p className="text-sm text-[var(--text-2)]">{formatPhone(c.phone)}</p>

@@ -22,7 +22,7 @@ const EDITABLE: QuoteStatus[] = ["DRAFT", "SENT"];
 async function rates(db: TenantDb, tenantId: string) {
   const s = (await db.pricingSettings.findFirst({ where: { tenantId } })) ?? { partMarginPct: 0, taxPct: 0, cardFeePct: 0 };
   // marginPct is only used to price a SEPARATE uber line with markup
-  return { marginPct: s.partMarginPct.toString(), taxPct: s.taxPct.toString(), cardFeePct: s.cardFeePct.toString() };
+  return { marginPct: s.partMarginPct.toString(), taxPct: "0", cardFeePct: "0" }; // imposto e cartão ficaram fora do MVP
 }
 
 const itemRows = (items: Line[], tenantId: string, quoteId: string) => items.map((i) => ({ ...i, tenantId, quoteId }));

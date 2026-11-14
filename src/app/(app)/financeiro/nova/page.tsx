@@ -12,10 +12,9 @@ export default async function NovoLancamento({ searchParams }: { searchParams: P
   const { db, tenant } = await requireAuth();
   const sp = await searchParams;
   const type = first(sp.tipo) === "EXPENSE" ? "EXPENSE" : "INCOME";
-  const [categories, customers, orders] = await Promise.all([
+  const [categories, customers] = await Promise.all([
     db.financialCategory.findMany({ where: { type }, orderBy: { name: "asc" } }),
     db.customer.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" }, take: 300, select: { id: true, name: true } }),
-    db.serviceOrder.findMany({ orderBy: { createdAt: "desc" }, take: 100, select: { id: true, orderNumber: true, description: true } }),
   ]);
   const today = resolvePeriod({ p: "hoje" }, tenant.timezone).from;
 
@@ -40,12 +39,6 @@ export default async function NovoLancamento({ searchParams }: { searchParams: P
           </Field>
           <Field name="customerId" label="Cliente (opcional)">
             <Select name="customerId" defaultValue=""><option value="">Sem cliente</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-          </Field>
-          <Field name="serviceOrderId" label="Ordem de serviço (opcional)">
-            <Select name="serviceOrderId" defaultValue="">
-              <option value="">Sem OS</option>
-              {orders.map((o) => <option key={o.id} value={o.id}>{o.orderNumber} - {o.description.slice(0, 40)}</option>)}
-            </Select>
           </Field>
           <Field name="paymentMethod" label="Forma de pagamento (opcional)">
             <Select name="paymentMethod" defaultValue=""><option value="">Não definida</option>{METHODS.map((m) => <option key={m}>{m}</option>)}</Select>

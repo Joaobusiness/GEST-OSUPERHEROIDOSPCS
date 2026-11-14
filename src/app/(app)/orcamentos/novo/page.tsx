@@ -10,15 +10,14 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const { db, tenantId } = await requireAuth();
   const d = await quoteFormData(db, tenantId);
-  const os = d.orders.find((o) => o.id === sp.os);
-  const customerId = os?.customerId ?? d.customers.find((c) => c.id === sp.cliente)?.id ?? "";
+  const customerId = d.customers.find((c) => c.id === sp.cliente)?.id ?? "";
   const fromCalc = fromCalculator(sp);
   return (
     <>
-      <PageHeader title="Novo orçamento" />
+      <PageHeader title="Novo orçamento" sub="Preencha o essencial. O PDF sai pronto para o cliente." />
       <QuoteForm
-        customers={d.customers} orders={d.orders} settings={d.settings}
-        initial={{ customerId, serviceOrderId: os?.id ?? "", items: fromCalc?.items ?? [], discount: "0", extraFee: "0", ...d.uberDefaults, ...(fromCalc?.uber ?? {}), validUntil: "", executionDays: "", paymentTerms: "", warranty: "", notes: "" }}
+        customers={d.customers} settings={d.settings}
+        initial={{ customerId, items: fromCalc?.items ?? [], discount: "0", extraFee: "0", ...d.uberDefaults, ...(fromCalc?.uber ?? {}), validUntil: "", executionDays: "", paymentTerms: "", warranty: "", notes: "" }}
       />
     </>
   );

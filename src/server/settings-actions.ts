@@ -5,7 +5,7 @@ import { z } from "zod";
 import { parse, uuid, type ActionState } from "@/lib/action";
 import { audit, requireAuth } from "./auth";
 import {
-  addMember, businessSchema, guard, memberSchema, pricingSchema, removeMember, updateBusiness, updatePricingSettings,
+  addMember, businessSchema, guard, memberSchema, logoSchema, pricingSchema, removeMember, updateBusiness, updateLogo, updatePricingSettings,
 } from "./settings";
 
 async function ctx() {
@@ -34,7 +34,7 @@ export async function updatePricingSettingsAction(_: ActionState, fd: FormData):
     await audit(c.tenantId, c.userId, "settings.pricing", "PricingSettings", c.tenantId, p.data);
     revalidatePath("/configuracoes");
     revalidatePath("/precificacao");
-    return "Padrões salvos. Valem só para novos orçamentos e simulações.";
+    return "Salvo. Vale só para os próximos orçamentos e contas.";
   });
 }
 
@@ -46,7 +46,7 @@ export async function addMemberAction(_: ActionState, fd: FormData): Promise<Act
     const id = await addMember(c, p.data);
     await audit(c.tenantId, c.userId, "team.add", "User", id, { email: p.data.email });
     revalidatePath("/configuracoes");
-    return "Membro adicionado. Passe a senha temporária a ele.";
+    return "Pessoa adicionada. Passe a senha temporária para ela.";
   });
 }
 
@@ -59,5 +59,18 @@ export async function removeMemberAction(_: ActionState, fd: FormData): Promise<
     await audit(c.tenantId, c.userId, "team.remove", "User", p.data.userId);
     revalidatePath("/configuracoes");
     return "Membro removido.";
+  });
+}
+
+export async function updateLogoAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const p = parse(logoSchema, fd);
+  if ("state" in p) return p.state;
+  const c = await ctx();
+  return guard(async () => {
+    await updateLogo(c, p.data.logo);
+    await audit(c.tenantId, c.userId, "settings.logo", "Tenant", c.tenantId);
+    revalidatePath("/configuracoes");
+    revalidatePath("/orcamentos");
+    return p.data.logo ? "Logo salvo." : "Logo removido.";
   });
 }

@@ -1,7 +1,7 @@
 import { Download } from "lucide-react";
-import { Empty, money, OS_STATUS, PageHeader } from "@/components/ui";
+import { Empty, money, PageHeader } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
-import { cashReport, ordersByStatus, resolvePeriod } from "@/server/finance";
+import { cashReport, resolvePeriod } from "@/server/finance";
 import { first, PeriodFilter, qs, type SP } from "../financeiro/parts";
 
 export const metadata = { title: "Relatórios" };
@@ -15,9 +15,9 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
   const { db, tenant } = await requireAuth();
   const sp = await searchParams;
   const period = resolvePeriod({ p: first(sp.p), de: first(sp.de), ate: first(sp.ate) }, tenant.timezone);
-  const [r, byStatus] = await Promise.all([cashReport(db, period, tenant.timezone), ordersByStatus(db, period)]);
+  const r = await cashReport(db, period, tenant.timezone);
   const csv = `/relatorios/csv${qs({ p: period.key, de: period.key === "custom" ? period.from : undefined, ate: period.key === "custom" ? period.to : undefined })}`;
-  const nothing = r.byMonth.length === 0 && byStatus.length === 0;
+  const nothing = r.byMonth.length === 0;
 
   return (
     <>
@@ -27,17 +27,15 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
       <PeriodFilter base="/relatorios" period={period} />
 
       {nothing ? (
-        <Empty title="Sem movimento neste período" text="Quando houver pagamentos registrados ou ordens abertas, os relatórios aparecem aqui." href="/financeiro" cta="Ir ao financeiro" />
+        <Empty title="Sem movimento neste período" text="Quando houver pagamentos registrados, os relatórios aparecem aqui." href="/financeiro" cta="Ir ao financeiro" />
       ) : (
-        <div className="grid gap-6">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
           <Table title="Resultado por mês" head={["Mês", "Recebido", "Pago", "Resultado"]} empty="Nenhum pagamento no período."
             rows={r.byMonth.map((m) => [monthLabel(m.month), money(m.income), money(m.expense), money(m.net)])} />
           <Table title="Resultado por categoria" head={["Categoria", "Tipo", "Valor"]} empty="Nenhum pagamento no período."
             rows={r.byCategory.map((c) => [c.name, c.type === "INCOME" ? "Receita" : "Despesa", money(c.total)])} />
           <Table title="Clientes que mais pagaram" head={["Cliente", "Recebido"]} empty="Nenhum recebimento de cliente no período."
             rows={r.topCustomers.map((c) => [c.name, money(c.total)])} />
-          <Table title="Serviços abertos no período, por situação" head={["Situação", "Ordens"]} empty="Nenhuma ordem aberta no período."
-            rows={byStatus.map((s) => [OS_STATUS[s.status]?.label ?? s.status, String(s.count)])} />
         </div>
       )}
     </>

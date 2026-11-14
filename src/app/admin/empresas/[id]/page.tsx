@@ -24,7 +24,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <>
       <Link href="/admin" className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-[var(--accent)]"><ArrowLeft size={16} aria-hidden /> Empresas</Link>
       <PageHeader title={t.name} sub={`${t.email} · criada em ${dateBR(t.createdAt)}`} />
-      <p className="num mb-6 text-[0.9375rem] text-[var(--text-2)]">{t.customerCount} clientes · {t.orderCount} ordens de serviço · {t.userCount} usuários</p>
+      <p className="num mb-6 text-[0.9375rem] text-[var(--text-2)]">{t.customerCount} clientes · {t.userCount} usuários</p>
 
       <section className="card card-pad mb-6 grid gap-3">
         <h2>Acesso</h2>

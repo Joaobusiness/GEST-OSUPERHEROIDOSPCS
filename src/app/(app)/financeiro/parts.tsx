@@ -15,9 +15,8 @@ export const qs = (o: Record<string, string | undefined>) => {
   return s ? `?${s}` : "";
 };
 
-const chip = "inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-[0.9375rem] font-semibold transition-colors";
-export const chipOn = `${chip} border-[var(--ink)] bg-[var(--ink)] text-[var(--on-ink)]`;
-export const chipOff = `${chip} border-[var(--line)] bg-[var(--card)] text-[var(--text)] hover:bg-[var(--bg)]`;
+export const chipOn = "pill pill-on";
+export const chipOff = "pill";
 
 /** Period chips as plain links (works without JS). `keep` carries other query params across changes. */
 export function PeriodFilter({ base, period, keep = {} }: { base: string; period: Period; keep?: Record<string, string | undefined> }) {
@@ -38,9 +37,9 @@ export function PeriodFilter({ base, period, keep = {} }: { base: string; period
         <form method="get" action={base} className="grid gap-3 border-t border-[var(--line)] p-4">
           {Object.entries(keep).map(([k, v]) => v && <input key={k} type="hidden" name={k} value={v} />)}
           <input type="hidden" name="p" value="custom" />
-          <div className="grid grid-cols-2 gap-3">
-            <label className="field"><span className="label">De</span><input className="input" type="date" name="de" defaultValue={period.from} required /></label>
-            <label className="field"><span className="label">Até</span><input className="input" type="date" name="ate" defaultValue={period.to} required /></label>
+          <div className="grid gap-3 min-[400px]:grid-cols-2">
+            <label className="field min-w-0"><span className="label">De</span><input className="input" type="date" name="de" defaultValue={period.from} required /></label>
+            <label className="field min-w-0"><span className="label">Até</span><input className="input" type="date" name="ate" defaultValue={period.to} required /></label>
           </div>
           <button className="btn btn-primary">Aplicar período</button>
         </form>

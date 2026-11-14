@@ -33,7 +33,7 @@ export default async function Page() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{t.name}</p>
                   <p className="truncate text-sm text-[var(--text-2)]">{t.email} · criada em {dateBR(t.createdAt)}</p>
-                  <p className="num text-sm text-[var(--text-2)]">{t.customerCount} clientes · {t.orderCount} OS · {t.userCount} usuários · {t.planName ?? "sem plano"}{t.expiresAt ? ` até ${dateBR(t.expiresAt)}` : ""}</p>
+                  <p className="num text-sm text-[var(--text-2)]">{t.customerCount} clientes · {t.userCount} usuários · {t.planName ?? "sem plano"}{t.expiresAt ? ` até ${dateBR(t.expiresAt)}` : ""}</p>
                 </div>
                 <div className="grid shrink-0 justify-items-end gap-1">
                   <Status map={TENANT} value={t.status} />

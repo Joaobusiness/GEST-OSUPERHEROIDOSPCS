@@ -20,7 +20,7 @@ export async function loadDashboard(db: TenantDb, period: Period, tz = TZ, now =
   const cutoff = new Date(now.getTime() - inactiveDays * 86_400_000);
   const inPeriod = { gte: period.start, lt: period.end };
 
-  const [cash, approved, open, sent, inactive, avg, late, customers, orders, transactions] = await Promise.all([
+  const [cash, approved, open, sent, inactive, late, customers, orders, transactions] = await Promise.all([
     cashSummary(db, period, tz),
     db.quote.findMany({
       where: { status: "APPROVED", decidedAt: inPeriod },
@@ -30,11 +30,6 @@ export async function loadDashboard(db: TenantDb, period: Period, tz = TZ, now =
     db.quote.aggregate({ where: { status: "SENT" }, _count: true, _sum: { totalAmount: true } }),
     db.customer.count({
       where: { deletedAt: null, OR: [{ lastContactAt: { lt: cutoff } }, { lastContactAt: null, createdAt: { lt: cutoff } }] },
-    }),
-    db.serviceOrder.aggregate({
-      where: { status: { in: ["COMPLETED", "DELIVERED"] }, OR: [{ completedAt: inPeriod }, { deliveredAt: inPeriod }] },
-      _avg: { totalAmount: true },
-      _count: true,
     }),
     db.serviceOrder.count({ where: { status: { notIn: [...CLOSED] }, estimatedDeliveryAt: { lt: now } } }),
     db.customer.count({ where: { deletedAt: null } }),
@@ -68,7 +63,7 @@ export async function loadDashboard(db: TenantDb, period: Period, tz = TZ, now =
     quotesWaiting: { count: sent._count, total: D(sent._sum.totalAmount) },
     toContact: inactive,
     inactiveDays,
-    avgTicket: avg._count > 0 ? D(avg._avg.totalAmount) : null,
+    avgTicket: approved.length > 0 ? billed.div(approved.length) : null, // média dos orçamentos aprovados
     alerts,
     attention: alerts.reduce((n, a) => n + a.count, 0),
   };

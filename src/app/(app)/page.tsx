@@ -22,57 +22,57 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <PageHeader title="Início" sub={tenant.name} />
         <Empty
           title="Comece pelo primeiro cliente"
-          text="Cadastre um cliente e abra a primeira ordem de serviço. Os números aparecem aqui conforme você trabalha."
+          text="Cadastre um cliente e faça o primeiro orçamento. Os números vão aparecendo aqui no seu dia a dia."
           href="/clientes"
           cta="Cadastrar cliente"
         />
-        <Link href="/ordens" className="btn btn-quiet mt-3 w-full">Abrir nova OS</Link>
+        <Link href="/orcamentos/novo" className="btn btn-quiet mt-3 w-full">Fazer um orçamento</Link>
       </>
     );
   }
 
   const p = d.estimatedProfit;
-  const shown = d.alerts.filter((a) => a.count > 0);
+  const shown = d.alerts.filter((a) => a.count > 0 && a.key !== "late");
 
   return (
     <>
       <PageHeader title="Início" sub={tenant.name} />
       <PeriodFilter base="/" period={period} />
 
-      <section aria-label="Dinheiro no período" className="card-ink rise p-5">
-        <p className="text-sm font-medium text-[var(--on-ink-2)]">Recebido, {period.label.toLowerCase()}</p>
-        <p className="num mt-1 text-[2.25rem] font-bold leading-none text-[var(--gold)]">{money(d.received)}</p>
-        <p className="mt-2 text-sm text-[var(--on-ink-2)]">Dinheiro que já entrou. Valor pendente não conta.</p>
-        <dl className="mt-4 grid grid-cols-2 gap-4 border-t border-[var(--ink-line)] pt-4">
+      <section aria-label="Dinheiro no período" className="hero rise p-5">
+        <p className="text-sm font-medium text-white/80">Recebido, {period.label.toLowerCase()}</p>
+        <p className="num mt-1 text-[2.25rem] font-bold leading-none text-white">{money(d.received)}</p>
+        <p className="mt-2 text-sm text-white/80">Só o que já caiu na mão. O que ainda está pendente não entra.</p>
+        <dl className="mt-4 grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
           <div>
-            <dt className="text-sm text-[var(--on-ink-2)]">Despesas pagas</dt>
+            <dt className="text-sm text-white/80">Despesas pagas</dt>
             <dd className="num text-lg font-semibold">{money(d.spent)}</dd>
           </div>
           <div>
-            <dt className="text-sm text-[var(--on-ink-2)]">Lucro estimado</dt>
-            <dd className="num text-lg font-semibold text-[var(--gold)]">{money(p.profit)}</dd>
+            <dt className="text-sm text-white/80">Lucro estimado</dt>
+            <dd className="num text-lg font-semibold text-white">{money(p.profit)}</dd>
           </div>
         </dl>
-        <details className="mt-3 border-t border-[var(--ink-line)]">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-[var(--on-ink-2)] [&::-webkit-details-marker]:hidden">
-            Como o lucro estimado é calculado
+        <details className="mt-3 border-t border-white/20">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-white/80 [&::-webkit-details-marker]:hidden">
+            Como chegamos no lucro estimado
           </summary>
           <div className="grid gap-2 pb-2 text-sm">
             <dl className="grid gap-2">
               <Row t={`Orçamentos aprovados no período (${p.quotes})`} v={money(p.billed)} />
-              <Row t="Menos impostos e taxa de cartão" v={`- ${money(p.fees)}`} />
-              <Row t="Menos custo de peças, mão de obra e Uber" v={`- ${money(p.costs)}`} />
+              <Row t="Menos impostos e taxa do cartão" v={`- ${money(p.fees)}`} />
+              <Row t="Menos o custo de peças, mão de obra e Uber" v={`- ${money(p.costs)}`} />
               <Row t="Lucro estimado" v={money(p.profit)} strong />
             </dl>
-            <p className="text-[var(--on-ink-2)]">Usa os percentuais e custos gravados em cada orçamento. É uma estimativa: não olha o que já foi pago.</p>
+            <p className="text-white/80">Usa os custos e percentuais guardados em cada orçamento. É uma estimativa e não olha o que já foi pago.</p>
           </div>
         </details>
       </section>
 
       <section aria-labelledby="atencao" className="mt-6">
-        <h2 id="atencao" className="mb-2">Precisa de atenção</h2>
+        <h2 id="atencao" className="mb-2">Pra ver agora</h2>
         {shown.length === 0 ? (
-          <p className="card card-pad text-[var(--text-2)]">Nada pendente agora. Orçamentos, prazos e contas estão em dia.</p>
+          <p className="card card-pad text-[var(--text-2)]">Tudo em dia por aqui. Nenhum orçamento, prazo ou conta esperando você.</p>
         ) : (
           <ul className="card overflow-hidden">
             {shown.map((a) => <AlertRow key={a.key} a={a} />)}
@@ -83,10 +83,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section aria-labelledby="resumo" className="mt-6">
         <h2 id="resumo" className="mb-2">Resumo</h2>
         <ul className="card overflow-hidden">
-          <Kpi href="/ordens" label="Serviços em andamento" value={String(d.inProgress)} />
-          <Kpi href="/orcamentos" label="Orçamentos aguardando aprovação" sub={`${money(d.quotesWaiting.total)} em propostas`} value={String(d.quotesWaiting.count)} />
-          <Kpi href="/remarketing" label="Clientes para contatar" sub={`Sem contato há mais de ${d.inactiveDays} dias`} value={String(d.toContact)} />
-          <Kpi label="Ticket médio" sub="Média das OS concluídas ou entregues no período" value={d.avgTicket ? money(d.avgTicket) : "Sem dados"} />
+          <Kpi href="/orcamentos" label="Orçamentos esperando resposta" sub={`${money(d.quotesWaiting.total)} em propostas`} value={String(d.quotesWaiting.count)} />
+          <Kpi href="/remarketing" label="Clientes para contatar" sub={`Faz mais de ${d.inactiveDays} dias que não falam com você`} value={String(d.toContact)} />
+          <Kpi label="Ticket médio" sub="Média dos orçamentos aprovados no período" value={d.avgTicket ? money(d.avgTicket) : "Sem dados"} />
         </ul>
       </section>
     </>
@@ -107,7 +106,7 @@ function AlertRow({ a }: { a: Alert }) {
   return (
     <li>
       <Link href={a.href} className="list-row">
-        <Icon size={22} aria-hidden className="shrink-0 text-[var(--accent)]" />
+        <span className="tile tile-accent"><Icon size={20} aria-hidden /></span>
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{a.label}</span>
           <span className="block text-sm text-[var(--text-2)]">{a.detail}</span>
