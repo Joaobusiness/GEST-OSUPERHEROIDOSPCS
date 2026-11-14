@@ -25,7 +25,7 @@ describe("remarketing", () => {
     const { db } = await makeTenant("rm-q");
     const c = await mk(db, "Rec", false);
     await db.quote.create({ data: { customerId: c.id, number: "1", status: "SENT", sentAt: new Date() } as never });
-    for (const n of ["1", "2", "3"]) await db.serviceOrder.create({ data: { customerId: c.id, orderNumber: n, description: "x" } as never });
+    for (const n of ["A1", "A2", "A3"]) await db.quote.create({ data: { customerId: c.id, number: n, status: "APPROVED", decidedAt: new Date() } as never });
     expect(await segmentOpportunities(db, "pending_quote")).toHaveLength(1);
     expect(await segmentOpportunities(db, "recurring")).toHaveLength(1);
   });

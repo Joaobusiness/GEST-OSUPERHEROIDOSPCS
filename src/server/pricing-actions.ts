@@ -18,7 +18,7 @@ export async function saveSimulationAction(_: ActionState, fd: FormData): Promis
   const p = parse(z.object({ label: optional(z.string().max(80)), input: z.string() }), fd);
   if ("state" in p) return p.state;
   let sim: SimInput;
-  try { sim = simSchema.parse(JSON.parse(p.data.input)); } catch { return fail("Simulação inválida. Recalcule e tente de novo."); }
+  try { sim = simSchema.parse(JSON.parse(p.data.input)); } catch { return fail("Não deu para guardar essa conta. Refaça e tente de novo."); }
   const built = toPricingInput(sim);
   if ("error" in built) return fail(built.error);
   const { db, tenantId } = await requireAuth();
@@ -30,5 +30,5 @@ export async function saveSimulationAction(_: ActionState, fd: FormData): Promis
   }
   await db.pricingSimulation.create({ data: { label: p.data.label ?? null, input: sim, result } as never });
   revalidatePath("/precificacao/historico");
-  return done("Simulação salva no histórico.");
+  return done("Guardado no histórico.");
 }

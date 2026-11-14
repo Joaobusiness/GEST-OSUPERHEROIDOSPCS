@@ -12,7 +12,7 @@ async function setup() {
 
 const settings = pricingSchema.parse({
   partMarginPct: "35", laborMarginPct: "50", minMarginPct: "15", cardFeePct: "4", taxPct: "6",
-  defaultUberCost: "10", otherCostsFixed: "0", defaultUberMode: "SEPARATE", uberMarkup: "on", inactiveDays: "90", warrantyAlertDays: "10",
+  defaultUberCost: "10", otherCostsFixed: "0", defaultUberMode: "SEPARATE", uberMarkup: "on", inactiveDays: "90",
 });
 
 describe("settings", () => {

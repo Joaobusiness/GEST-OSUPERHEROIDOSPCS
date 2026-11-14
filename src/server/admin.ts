@@ -1,14 +1,14 @@
 import Decimal from "decimal.js";
 import { z } from "zod";
-import { moneyStr, optional, uuid } from "@/lib/action";
+import { moneyStr, optional, uuid, ymd } from "@/lib/action";
 import { prisma } from "@/lib/db";
 import { UserError } from "@/server/settings";
 
 // Super Admin area: cross-tenant on purpose, so it uses prisma directly. It only ever reads
-// counts and subscription data of other tenants, never customers, orders or money.
+// counts and subscription data of other tenants, never customers or money.
 
 export async function listTenants() {
-  const [tenants, customers, orders, members] = await Promise.all([
+  const [tenants, customers, members] = await Promise.all([
     prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -17,33 +17,31 @@ export async function listTenants() {
       },
     }),
     prisma.customer.groupBy({ by: ["tenantId"], where: { deletedAt: null }, _count: { _all: true } }),
-    prisma.serviceOrder.groupBy({ by: ["tenantId"], _count: { _all: true } }),
     prisma.tenantUser.groupBy({ by: ["tenantId"], _count: { _all: true } }),
   ]);
   const count = (rows: { tenantId: string; _count: { _all: number } }[]) => new Map(rows.map((r) => [r.tenantId, r._count._all]));
-  const [c, o, m] = [count(customers), count(orders), count(members)];
+  const [c, m] = [count(customers), count(members)];
   return tenants.map((t) => ({
     id: t.id, name: t.name, email: t.email, status: t.status, createdAt: t.createdAt,
     planName: t.subscriptions[0]?.plan.name ?? null,
     subscriptionStatus: t.subscriptions[0]?.status ?? null,
     expiresAt: t.subscriptions[0]?.expiresAt ?? null,
-    customerCount: c.get(t.id) ?? 0, orderCount: o.get(t.id) ?? 0, userCount: m.get(t.id) ?? 0,
+    customerCount: c.get(t.id) ?? 0, userCount: m.get(t.id) ?? 0,
   }));
 }
 
 export type TenantRow = Awaited<ReturnType<typeof listTenants>>[number];
 
 export async function platformStats() {
-  const [tenants, activeTenants, users, orders, active] = await Promise.all([
+  const [tenants, activeTenants, users, active] = await Promise.all([
     prisma.tenant.count(),
     prisma.tenant.count({ where: { status: "ACTIVE" } }),
     prisma.user.count({ where: { isSuperAdmin: false } }),
-    prisma.serviceOrder.count(),
     // one subscription per tenant is kept (setSubscription updates the latest), so summing is safe
     prisma.subscription.findMany({ where: { status: "ACTIVE" }, select: { plan: { select: { price: true, billingCycle: true } } } }),
   ]);
   const mrr = active.reduce((sum, s) => sum.plus(s.plan.billingCycle === "YEARLY" ? new Decimal(s.plan.price.toString()).div(12) : s.plan.price.toString()), new Decimal(0));
-  return { tenants, activeTenants, users, orders, mrr: mrr.toDecimalPlaces(2).toFixed(2) };
+  return { tenants, activeTenants, users, mrr: mrr.toDecimalPlaces(2).toFixed(2) };
 }
 
 export async function setTenantStatus(tenantId: string, status: "ACTIVE" | "SUSPENDED") {
@@ -76,7 +74,7 @@ export async function setPlanActive(planId: string, isActive: boolean) {
 export const subscriptionSchema = z.object({
   tenantId: uuid, planId: uuid,
   status: z.enum(["TRIAL", "ACTIVE", "PAST_DUE", "CANCELED"]),
-  expiresAt: optional(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.")),
+  expiresAt: optional(ymd()),
 });
 
 export async function setSubscription(d: z.infer<typeof subscriptionSchema>) {

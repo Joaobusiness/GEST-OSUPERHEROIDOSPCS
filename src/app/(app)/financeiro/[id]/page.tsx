@@ -18,7 +18,7 @@ export default async function Lancamento({ params }: { params: Promise<{ id: str
   const { db, tenant } = await requireAuth();
   const t = await db.financialTransaction.findFirst({
     where: { id },
-    include: { category: { select: { name: true } }, payments: { orderBy: { paidAt: "asc" } }, serviceOrder: { select: { id: true, orderNumber: true } } },
+    include: { category: { select: { name: true } }, payments: { orderBy: { paidAt: "asc" } } },
   });
   if (!t) notFound();
   const customer = t.customerId ? await db.customer.findFirst({ where: { id: t.customerId }, select: { name: true } }) : null;
@@ -40,7 +40,6 @@ export default async function Lancamento({ params }: { params: Promise<{ id: str
         <Info k="Categoria" v={t.category.name} />
         <Info k="Vencimento" v={dateBR(t.dueDate, "UTC")} />
         {customer && <Info k="Cliente" v={customer.name} />}
-        {t.serviceOrder && <Info k="Ordem de serviço" v={<Link href={`/ordens/${t.serviceOrder.id}`} className="font-semibold text-[var(--accent)] underline underline-offset-2">{t.serviceOrder.orderNumber}</Link>} />}
         {t.paymentMethod && <Info k="Forma de pagamento" v={t.paymentMethod} />}
       </dl>
 

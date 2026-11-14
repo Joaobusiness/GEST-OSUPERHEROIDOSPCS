@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { makeCustomer, makeTenant } from "../../tests/helpers";
 
-vi.mock("./finance", () => ({ onOrderDelivered: vi.fn(), onQuoteApproved: vi.fn(), onQuoteCanceled: vi.fn(), createReceivable: vi.fn(), registerPayment: vi.fn() }));
-import { approveQuote, convertToOrder, createQuoteFromOrder, saveQuote, type QuoteInput } from "./quotes";
-import { createOrder } from "./orders";
+vi.mock("./finance", () => ({ onQuoteApproved: vi.fn(), onQuoteCanceled: vi.fn(), createReceivable: vi.fn(), registerPayment: vi.fn() }));
+import { approveQuote, saveQuote, type QuoteInput } from "./quotes";
 import { quoteTotals, suggestPrices } from "./line-items";
 
 const base = (customerId: string, over: Partial<QuoteInput> = {}): QuoteInput => ({
@@ -48,27 +47,5 @@ describe("quotes", () => {
     expect(old.totalAmount.toString()).toBe("380");
     expect(old.items).toHaveLength(2);
     expect(old.approvalMethod).toBe("WhatsApp");
-  });
-
-  it("converts once: repeated and concurrent clicks give the same order", async () => {
-    const t = await makeTenant("C"); const c = await makeCustomer(t.db);
-    const { quote } = await saveQuote(t.db, t.tenantId, null, base(c.id, { discount: "30" }));
-    await expect(convertToOrder(t.db, t.tenantId, null, quote.id)).rejects.toThrow(); // not approved yet
-    await approveQuote(t.db, quote.id, "manual");
-    const res = await Promise.all([1, 2, 3].map(() => convertToOrder(t.db, t.tenantId, null, quote.id)));
-    expect(new Set(res.map((x) => x.orderId)).size).toBe(1);
-    expect(res.filter((x) => x.created)).toHaveLength(1);
-    expect(await t.db.serviceOrder.count()).toBe(1);
-    const o = await t.db.serviceOrder.findFirstOrThrow({ include: { items: true } });
-    expect(o.totalAmount.toString()).toBe("350"); // discount became a negative line
-    expect(o.items).toHaveLength(3);
-  });
-
-  it("quote from order copies its items and links the OS", async () => {
-    const t = await makeTenant("O"); const c = await makeCustomer(t.db);
-    const o = await createOrder(t.db, t.tenantId, null, { customerId: c.id, description: "pc lento", items: base(c.id).items });
-    const q = await createQuoteFromOrder(t.db, t.tenantId, o.id);
-    expect(q.serviceOrderId).toBe(o.id);
-    expect(q.totalAmount.toString()).toBe("380");
   });
 });

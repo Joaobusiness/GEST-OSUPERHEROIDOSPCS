@@ -11,21 +11,21 @@ export default async function Page() {
   const sims = await db.pricingSimulation.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
   return (
     <>
-      <PageHeader title="Histórico" sub="Simulações salvas. Recalcule para ajustar e reaproveitar." action={<Link href="/precificacao" className="btn btn-primary btn-sm">Nova simulação</Link>} />
+      <PageHeader title="Histórico" sub="Contas que você guardou. Abra uma para ajustar e usar de novo." action={<Link href="/precificacao" className="btn btn-primary btn-sm">Nova simulação</Link>} />
       {sims.length === 0 ? (
-        <Empty title="Nenhuma simulação salva" text="Calcule um preço e toque em Salvar no histórico para guardar aqui." href="/precificacao" cta="Calcular um preço" />
+        <Empty title="Nada guardado ainda" text="Faça uma conta e toque em Guardar no histórico. Ela aparece aqui." href="/precificacao" cta="Calcular um preço" />
       ) : (
         <ul className="card overflow-hidden">
           {sims.map((s) => {
             const r = s.result as Result;
             return (
-              <li key={s.id} className="list-row">
+              <li key={s.id} className="list-row flex-wrap">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{s.label ?? "Sem nome"}</p>
-                  <p className="num text-sm text-[var(--text-2)]">{dateTimeBR(s.createdAt, tenant.timezone)} · lucro {money(r.profit)} · margem {r.effectiveMarginPct.replace(".", ",")}%</p>
+                  <p className="num text-sm text-[var(--text-2)]">{dateTimeBR(s.createdAt, tenant.timezone)} · sobra {money(r.profit)} · margem {r.effectiveMarginPct.replace(".", ",")}%</p>
                 </div>
-                <p className="num font-bold">{money(r.finalPrice)}</p>
-                <Link href={`/precificacao?sim=${s.id}`} className="btn btn-quiet btn-sm">Recalcular</Link>
+                <p className="num font-bold ml-auto">{money(r.finalPrice)}</p>
+                <Link href={`/precificacao?sim=${s.id}`} className="btn btn-quiet btn-sm">Abrir</Link>
               </li>
             );
           })}

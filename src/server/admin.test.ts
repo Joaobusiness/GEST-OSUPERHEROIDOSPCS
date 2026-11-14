@@ -10,9 +10,8 @@ describe("admin", () => {
     await makeCustomer(db, "Outro Segredo");
     const row = (await listTenants()).find((t) => t.id === tenantId)!;
     expect(row.customerCount).toBe(2);
-    expect(row.orderCount).toBe(0);
-    expect(Object.keys(row).sort()).toEqual([
-      "createdAt", "customerCount", "email", "expiresAt", "id", "name", "orderCount", "planName", "status", "subscriptionStatus", "userCount",
+        expect(Object.keys(row).sort()).toEqual([
+      "createdAt", "customerCount", "email", "expiresAt", "id", "name", "planName", "status", "subscriptionStatus", "userCount",
     ]);
     expect(JSON.stringify(row)).not.toContain("Secreto");
   });

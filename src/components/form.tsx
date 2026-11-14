@@ -25,7 +25,20 @@ export function ActionForm({ action, children, className = "grid gap-4", resetOn
 }) {
   const [state, formAction] = useActionState(action, {} as ActionState);
   const ref = useRef<HTMLFormElement>(null);
+  const sent = useRef<FormData | null>(null);
   useEffect(() => {
+    // React 19 resets the form after every action: put back what was typed when the server rejected it (never passwords)
+    const f = ref.current;
+    if (!state.ok && (state.error || state.fieldErrors) && sent.current && f) {
+      const fd = sent.current;
+      for (const el of Array.from(f.elements)) {
+        if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) || !el.name || el.name.startsWith("$ACTION")) continue;
+        if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) { el.checked = fd.getAll(el.name).includes(el.value); continue; }
+        if (el instanceof HTMLInputElement && ["password", "hidden", "file"].includes(el.type)) continue;
+        const v = fd.get(el.name);
+        if (typeof v === "string") el.value = v;
+      }
+    }
     if (state.ok && resetOnSuccess) ref.current?.reset();
     if (state.ok && onSuccessHref) window.location.assign(onSuccessHref);
   }, [state, resetOnSuccess, onSuccessHref]);
@@ -47,7 +60,7 @@ export function ActionForm({ action, children, className = "grid gap-4", resetOn
     if (state.error) f.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
   }, [state]);
   return (
-    <form ref={ref} action={formAction} className={className} noValidate>
+    <form ref={ref} action={formAction} onSubmit={(e) => { sent.current = new FormData(e.currentTarget); }} className={className} noValidate>
       {state.error && <p role="alert" className="t-toast-in chip chip-bad !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">{state.error}</p>}
       {state.ok && state.message && <p role="status" className="t-toast-in chip chip-ok !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">{state.message}</p>}
       {children}

@@ -15,7 +15,7 @@ export function SideNav() {
         const on = active(path, href);
         return (
           <Link key={href} href={href} aria-current={on ? "page" : undefined}
-            className={`flex min-h-12 items-center gap-3 rounded-[var(--r-md)] px-3.5 text-[0.9375rem] font-medium transition-colors ${on ? "bg-[var(--ink-line)] text-white" : "text-[var(--on-ink-2)] hover:bg-white/5 hover:text-white"}`}>
+            className={`flex min-h-11 items-center gap-3 rounded-[var(--r-md)] px-3.5 text-[0.9375rem] font-medium transition-colors ${on ? "bg-[var(--ink-line)] text-white" : "text-[var(--on-ink-2)] hover:bg-white/5 hover:text-white"}`}>
             <Icon size={20} aria-hidden /> {label}
           </Link>
         );
@@ -38,7 +38,7 @@ export function TabBar() {
               <Link href={href} aria-current={on ? "page" : undefined}
                 className={`flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium ${on ? "text-[var(--glow)]" : "text-[var(--on-ink-2)]"}`}>
                 <Icon size={22} aria-hidden />
-                {label === "Ordens de serviço" ? "Ordens" : label}
+                {label}
               </Link>
             </li>
           );

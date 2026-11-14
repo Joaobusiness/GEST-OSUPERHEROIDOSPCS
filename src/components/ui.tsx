@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import { Decimal } from "decimal.js";
 
 /** Official wordmark with its black ground converted to transparency. Built for dark surfaces (--ink); do not place it on light ones. */
@@ -28,9 +29,18 @@ export function PageHeader({ title, sub, action }: { title: string; sub?: string
   );
 }
 
+/** Iniciais num quadrado arredondado. A cor vem do nome: o mesmo cliente tem sempre a mesma. */
+export function Avatar({ name }: { name: string }) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const ini = ((parts[0]?.[0] ?? "?") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  const tone = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 4;
+  return <span aria-hidden className={`avatar ${tone ? `avatar-${tone}` : ""}`}>{ini}</span>;
+}
+
 export function Empty({ title, text, href, cta }: { title: string; text: string; href?: string; cta?: string }) {
   return (
     <div className="card card-pad grid justify-items-center gap-2 py-10 text-center">
+      <span aria-hidden className="tile tile-accent mb-1 !size-12 !rounded-2xl"><Inbox size={22} /></span>
       <h3>{title}</h3>
       <p className="max-w-[40ch] text-[0.9375rem] text-[var(--text-2)]">{text}</p>
       {href && cta && <Link href={href} className="btn btn-primary mt-2">{cta}</Link>}

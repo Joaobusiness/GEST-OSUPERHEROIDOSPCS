@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { hash } from "@node-rs/argon2"; // same call as hashPassword(); auth.ts imports server-only, which fails outside Next
 import { prisma } from "../src/lib/db";
 import { forTenant } from "../src/lib/db";
@@ -6,29 +7,30 @@ import { approveQuote, saveQuote } from "../src/server/quotes";
 import { bootstrapTenant } from "../src/server/tenant";
 
 const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? "admin@superheroi.local").toLowerCase();
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe!12345";
+// no well-known default: an unset password becomes a random one, printed once
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || randomBytes(12).toString("base64url");
 const DEMO_EMAIL = "demo@superheroi.local";
 const DAY = 86_400_000;
 
 async function main() {
   const prod = process.env.NODE_ENV === "production";
-  if (prod && !process.env.SEED_ADMIN_PASSWORD) throw new Error("Defina SEED_ADMIN_PASSWORD para rodar o seed em produção.");
+  if (prod && !(process.env.SEED_ADMIN_PASSWORD && process.env.SEED_ADMIN_EMAIL)) throw new Error("Defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD para rodar o seed em produção (o Super Admin é só o seu usuário).");
   // Plan: price 0 on purpose, the real price is still to be defined.
   const plan = (await prisma.subscriptionPlan.findFirst({ where: { name: "Plano Único" } })) ??
     (await prisma.subscriptionPlan.create({ data: { name: "Plano Único", price: 0, description: "Preço a definir pelo administrador da plataforma." } }));
 
   if (!(await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } }))) {
     await prisma.user.create({ data: { email: ADMIN_EMAIL, name: "Super Admin", passwordHash: await hash(ADMIN_PASSWORD), isSuperAdmin: true } });
-    console.log(`Super Admin criado: ${ADMIN_EMAIL}`);
+    console.log(`Super Admin criado: ${ADMIN_EMAIL}${process.env.SEED_ADMIN_PASSWORD ? "" : ` / ${ADMIN_PASSWORD} (anote: não será mostrada de novo)`}`);
   }
 
   if (prod) { console.log("Produção: demo não criada."); return; }
   if (await prisma.user.findUnique({ where: { email: DEMO_EMAIL } })) { console.log("Demo já existe. Nada a fazer."); return; }
 
-  let seeded: { tenantId: string; customerId: string; orderId: string } | undefined;
+  let seeded: { tenantId: string; customerId: string } | undefined;
   const passwordHash = await hash("Demo!12345");
   await prisma.$transaction(async (tx) => {
-    const tenant = await tx.tenant.create({ data: { name: "Assistência Demo", email: DEMO_EMAIL, phone: "+5565999990001", whatsapp: "+5565999990001", orderSeq: 3, quoteSeq: 0 } });
+    const tenant = await tx.tenant.create({ data: { name: "Assistência Demo", email: DEMO_EMAIL, phone: "+5565999990001", whatsapp: "+5565999990001", quoteSeq: 0 } });
     const user = await tx.user.create({ data: { email: DEMO_EMAIL, name: "Técnico Demo", passwordHash } });
     await tx.tenantUser.create({ data: { tenantId: tenant.id, userId: user.id, role: "ADMIN" } });
     await bootstrapTenant(tx, tenant.id); // reuses the active plan created above
@@ -42,17 +44,11 @@ async function main() {
 
     const dev = (customerId: string, category: string, brand: string, model: string) =>
       tx.customerDevice.create({ data: { tenantId, customerId, category, brand, model } });
-    const notebook = await dev(ana.id, "Notebook", "Dell", "Inspiron 15 3000");
-    const desktop = await dev(carlos.id, "Desktop", "Montado", "Ryzen 5 / 16 GB");
-    const pdv = await dev(mercado.id, "Desktop", "Positivo", "Master D3400");
+    await dev(ana.id, "Notebook", "Dell", "Inspiron 15 3000");
+    await dev(carlos.id, "Desktop", "Montado", "Ryzen 5 / 16 GB");
+    await dev(mercado.id, "Desktop", "Positivo", "Master D3400");
 
-    const order = (n: number, customerId: string, deviceId: string, description: string, status: "COMPLETED" | "IN_PROGRESS" | "WAITING_APPROVAL", totalAmount: string, created: number) =>
-      tx.serviceOrder.create({ data: { tenantId, customerId, deviceId, orderNumber: `OS-${String(n).padStart(4, "0")}`, description, status, totalAmount, createdAt: new Date(now - created * DAY), warrantyDays: status === "COMPLETED" ? 90 : 0 } });
-    const os1 = await order(1, ana.id, notebook.id, "Notebook lento e esquentando. Limpeza e troca de SSD.", "COMPLETED", "0", 6);
-    await order(2, carlos.id, desktop.id, "PC não liga após queda de energia.", "WAITING_APPROVAL", "0", 2);
-    await order(3, mercado.id, pdv.id, "Computador do caixa reiniciando sozinho.", "IN_PROGRESS", "0", 1);
-
-    seeded = { tenantId, customerId: ana.id, orderId: os1.id };
+    seeded = { tenantId, customerId: ana.id };
     console.log(`Demo criada: ${DEMO_EMAIL} / Demo!12345 (plano ${plan.name})`);
   });
 
@@ -60,7 +56,7 @@ async function main() {
   if (seeded) {
     const db = forTenant(seeded.tenantId);
     const { quote } = await saveQuote(db, seeded.tenantId, null, {
-      customerId: seeded.customerId, serviceOrderId: seeded.orderId, discount: "0", extraFee: "0",
+      customerId: seeded.customerId, discount: "0", extraFee: "0",
       uberMode: "SEPARATE", uberCost: "25", uberMarkup: false, warranty: "90 dias", paymentTerms: "Pix ou cartão",
       items: [
         { kind: "PART", description: "SSD 480 GB", quantity: "1", unitCost: "220", unitPrice: "310" },
@@ -68,7 +64,6 @@ async function main() {
       ],
     });
     await approveQuote(db, quote.id, "WhatsApp");
-    await db.serviceOrder.update({ where: { id: seeded.orderId }, data: { totalAmount: quote.totalAmount } });
   }
 }
 

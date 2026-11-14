@@ -31,7 +31,7 @@ export default async function RemarketingPage({ searchParams }: { searchParams: 
       <nav aria-label="Segmentos" className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
         {(Object.keys(SEGMENTS) as (keyof typeof SEGMENTS)[]).map((k) => (
           <Link key={k} href={`/remarketing?seg=${k}`} aria-current={k === seg ? "page" : undefined}
-            className={`btn btn-sm shrink-0 ${k === seg ? "btn-primary" : "btn-quiet"}`}>{SEGMENTS[k].label}</Link>
+            className="pill">{SEGMENTS[k].label}</Link>
         ))}
       </nav>
       {seg === "inactive" && (
@@ -39,7 +39,7 @@ export default async function RemarketingPage({ searchParams }: { searchParams: 
           <span className="text-[var(--text-2)]">Sem atendimento há</span>
           {presets.map((d) => (
             <Link key={d} href={`/remarketing?seg=inactive&dias=${d}`} aria-current={d === days ? "page" : undefined}
-              className={`btn btn-sm ${d === days ? "btn-primary" : "btn-quiet"}`}>{d} dias</Link>
+              className="pill">{d} dias</Link>
           ))}
         </nav>
       )}
@@ -57,7 +57,7 @@ export default async function RemarketingPage({ searchParams }: { searchParams: 
             <div key={r.customer.id} className={`grid gap-1 border-t border-[var(--line)] px-5 py-3 first:border-t-0 lg:items-center lg:gap-3 ${COLS}`}>
               <Link href={`/clientes/${r.customer.id}`} className="min-w-0 truncate font-semibold">{r.customer.name}</Link>
               <span className="text-sm lg:text-base">{formatPhone(r.customer.phone)}</span>
-              <span className="text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]">{r.lastOrderAt ? dateBR(r.lastOrderAt, tenant.timezone) : "Nunca"}</span>
+              <span className="text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]">{r.lastServiceAt ? dateBR(r.lastServiceAt, tenant.timezone) : "Nunca"}</span>
               <span className="truncate text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]">{r.lastService ?? "—"}</span>
               <span className="text-sm lg:text-base"><span className="lg:hidden">Dias: </span>{r.daysInactive}</span>
               <span className="text-sm lg:text-base">{r.opportunity}</span>

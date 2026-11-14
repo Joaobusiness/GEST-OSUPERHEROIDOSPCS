@@ -1,6 +1,6 @@
 import type { TenantDb } from "@/lib/db";
 import { fillTemplate } from "@/lib/br";
-import { CrmError, getCustomer } from "@/server/crm";
+import { CrmError, UUID_RE, getCustomer } from "@/server/crm";
 
 type Kind = "OPERATIONAL" | "MARKETING";
 const DAY = 86_400_000;
@@ -10,7 +10,6 @@ export const SEGMENTS = {
   pending_quote: { label: "Orçamento pendente", kind: "OPERATIONAL" },
   rejected_quote: { label: "Orçamento recusado", kind: "MARKETING" },
   completed: { label: "Serviço concluído", kind: "OPERATIONAL" },
-  warranty: { label: "Garantia perto de vencer", kind: "OPERATIONAL" },
   recurring: { label: "Clientes recorrentes", kind: "MARKETING" },
 } as const satisfies Record<string, { label: string; kind: Kind }>;
 export type SegmentId = keyof typeof SEGMENTS;
@@ -25,7 +24,7 @@ export function marketingBlock(c: { marketingConsent: boolean; marketingOptOut: 
 
 export type Opportunity = {
   customer: { id: string; name: string; phone: string; whatsapp: string | null };
-  lastOrderAt: Date | null; lastService: string | null; daysInactive: number;
+  lastServiceAt: Date | null; lastService: string | null; daysInactive: number;
   opportunity: string; eligible: boolean; reason?: string;
 };
 
@@ -38,19 +37,20 @@ export async function segmentOpportunities(db: TenantDb, seg: SegmentId, opts: {
     db.customer.findMany({
       where: { deletedAt: null },
       include: {
-        orders: { where: { status: { not: "CANCELED" } }, orderBy: { createdAt: "desc" }, select: { createdAt: true, description: true, status: true, completedAt: true, deliveredAt: true, warrantyDays: true } },
-        quotes: { select: { status: true, sentAt: true, createdAt: true, decidedAt: true } },
+        quotes: { select: { status: true, sentAt: true, createdAt: true, decidedAt: true, items: { take: 1, select: { description: true } } } },
       },
     }),
   ]);
   const days = opts.days ?? settings?.inactiveDays ?? 60;
-  const alertDays = settings?.warrantyAlertDays ?? 15;
   const now = Date.now();
   const kind = opts.forKind ?? SEGMENTS[seg].kind;
   const out: Opportunity[] = [];
   for (const c of customers) {
-    const last = c.orders[0];
-    const daysInactive = Math.floor((now - (last?.createdAt ?? c.createdAt).getTime()) / DAY);
+    // a "service" is an approved quote
+    const done = c.quotes.filter((x) => x.status === "APPROVED").sort((a, b) => +(b.decidedAt ?? b.createdAt) - +(a.decidedAt ?? a.createdAt));
+    const last = done[0];
+    const lastAt = last ? (last.decidedAt ?? last.createdAt) : null;
+    const daysInactive = Math.floor((now - (lastAt ?? c.createdAt).getTime()) / DAY);
     let opportunity: string | undefined;
     if (seg === "inactive") {
       if (daysInactive >= days) opportunity = `Sem atendimento há ${daysInactive} dias`;
@@ -61,28 +61,16 @@ export async function segmentOpportunities(db: TenantDb, seg: SegmentId, opts: {
       if (c.quotes.some((x) => x.status === "REJECTED")) opportunity = "Recusou um orçamento";
     } else if (seg === "completed") {
       // shortcut: fixed 30-day window for post-service follow-up, make it a setting if asked
-      const ages = c.orders
-        .filter((x) => x.status === "COMPLETED" || x.status === "DELIVERED")
-        .map((x) => x.deliveredAt ?? x.completedAt)
-        .filter((d): d is Date => !!d)
-        .map((d) => Math.floor((now - +d) / DAY))
-        .filter((a) => a >= 0 && a <= 30);
+      const ages = done.map((x) => Math.floor((now - +(x.decidedAt ?? x.createdAt)) / DAY)).filter((a) => a >= 0 && a <= 30);
       if (ages.length) opportunity = `Serviço concluído há ${plural(Math.min(...ages), "dia", "dias")}`;
-    } else if (seg === "warranty") {
-      const exp = c.orders
-        .filter((x) => x.deliveredAt && x.warrantyDays > 0)
-        .map((x) => +x.deliveredAt! + x.warrantyDays * DAY)
-        .filter((e) => e >= now && e <= now + alertDays * DAY)
-        .sort((a, b) => a - b)[0];
-      if (exp) opportunity = `Garantia termina em ${plural(Math.ceil((exp - now) / DAY), "dia", "dias")}`;
-    } else if (c.orders.length >= 3) {
-      opportunity = `${c.orders.length} serviços feitos`;
+    } else if (done.length >= 3) {
+      opportunity = `${done.length} serviços feitos`;
     }
     if (!opportunity) continue;
     const reason = kind === "MARKETING" ? marketingBlock(c) : undefined;
     out.push({
       customer: { id: c.id, name: c.name, phone: c.phone, whatsapp: c.whatsapp },
-      lastOrderAt: last?.createdAt ?? null, lastService: last?.description ?? null, daysInactive, opportunity, eligible: !reason, reason,
+      lastServiceAt: lastAt, lastService: last?.items[0]?.description ?? null, daysInactive, opportunity, eligible: !reason, reason,
     });
   }
   return out.sort((a, b) => b.daysInactive - a.daysInactive);
@@ -109,11 +97,11 @@ export async function deleteTemplate(db: TenantDb, id: string) {
 /** Message text for one customer: placeholders filled from their last service and the tenant. */
 export async function buildMessage(db: TenantDb, tenant: { name: string; phone: string | null; whatsapp: string | null; timezone: string }, customerId: string, body: string) {
   const c = await getCustomer(db, customerId);
-  const last = await db.serviceOrder.findFirst({ where: { customerId, status: { not: "CANCELED" } }, orderBy: { createdAt: "desc" } });
-  const date = new Intl.DateTimeFormat("pt-BR", { timeZone: tenant.timezone, day: "2-digit", month: "2-digit", year: "numeric" }).format(last?.createdAt ?? c.createdAt);
+  const last = await db.quote.findFirst({ where: { customerId, status: "APPROVED" }, orderBy: { decidedAt: "desc" }, include: { items: { take: 1 } } });
+  const date = new Intl.DateTimeFormat("pt-BR", { timeZone: tenant.timezone, day: "2-digit", month: "2-digit", year: "numeric" }).format(last?.decidedAt ?? last?.createdAt ?? c.createdAt);
   return fillTemplate(body, {
     nome_cliente: c.name.split(" ")[0],
-    ultimo_servico: last?.description ?? "seu equipamento",
+    ultimo_servico: last?.items[0]?.description ?? "seu equipamento",
     data_atendimento: date,
     nome_empresa: tenant.name,
     telefone_empresa: tenant.whatsapp ?? tenant.phone ?? "",
@@ -177,6 +165,7 @@ export async function listCampaigns(db: TenantDb) {
 }
 
 export async function getCampaign(db: TenantDb, id: string) {
+  if (!UUID_RE.test(id)) throw new CrmError("Campanha não encontrada.");
   const camp = await db.campaign.findFirst({ where: { id }, include: { contacts: true } });
   if (!camp) throw new CrmError("Campanha não encontrada.");
   const [customers, template] = await Promise.all([

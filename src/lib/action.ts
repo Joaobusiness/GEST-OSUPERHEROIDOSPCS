@@ -33,11 +33,15 @@ export const optional = <T extends z.ZodType>(s: T) =>
 export const moneyStr = z
   .string()
   .transform((s) => (s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s))
-  .refine((s) => /^\d+(\.\d{1,2})?$/.test(s), "Valor inválido.");
+  .refine((s) => /^\d{1,10}(\.\d{1,2})?$/.test(s), "Valor inválido.");
 
 export const pctStr = z
   .string()
   .transform((s) => s.replace(",", "."))
-  .refine((s) => /^\d+(\.\d{1,2})?$/.test(s) && Number(s) <= 100, "Percentual inválido (0 a 100).");
+  .refine((s) => /^\d{1,3}(\.\d{1,2})?$/.test(s) && Number(s) <= 100, "Percentual inválido (0 a 100).");
+
+/** yyyy-mm-dd that is a real calendar day (rejects 2026-13-45 and 2026-02-31, which would reach the DB and 500). */
+export const ymd = (msg = "Data inválida.") =>
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, msg).refine((s) => { const d = new Date(`${s}T00:00:00Z`); return !isNaN(+d) && d.toISOString().startsWith(s) && s >= "1900-01-01" && s <= "2999-12-31"; }, msg);
 
 export const uuid = z.string().uuid("Seleção inválida.");

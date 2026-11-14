@@ -20,12 +20,9 @@ export function CustomerForm({ c }: { c?: C }) {
           <Field name="notes" label="Observações"><Textarea name="notes" defaultValue={c?.notes ?? ""} /></Field>
         </div>
       </details>
-      <fieldset className="grid gap-1 border-t border-[var(--line)] pt-4">
-        <legend className="label pb-1">Mensagens de marketing (LGPD)</legend>
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="marketingConsent" defaultChecked={c?.marketingConsent} className="size-5 accent-[var(--accent)]" /> O cliente autorizou receber promoções</label>
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="marketingOptOut" defaultChecked={c?.marketingOptOut} className="size-5 accent-[var(--accent)]" /> O cliente pediu para não receber marketing</label>
-        <p className="hint">Avisos do serviço (orçamento, garantia) não dependem disso.</p>
-      </fieldset>
+      {/* O consentimento de marketing já gravado não é apagado ao salvar */}
+      {c?.marketingConsent && <input type="hidden" name="marketingConsent" value="on" />}
+      {c?.marketingOptOut && <input type="hidden" name="marketingOptOut" value="on" />}
       <SubmitButton>Salvar cliente</SubmitButton>
     </ActionForm>
   );

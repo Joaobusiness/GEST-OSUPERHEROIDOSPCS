@@ -8,7 +8,7 @@ export default function Page() {
       <p className="chip chip-warn">Modelo a revisar por um advogado antes de uso comercial</p>
       <h1 className="mt-4">Política de privacidade</h1>
       <h2 className="mt-6">Dados tratados</h2>
-      <p className="mt-2">Conta e empresa (nome, e-mail, telefone, CNPJ ou CPF), cadastro de clientes da assistência (nome, telefone, e-mail, endereço, equipamentos e histórico de atendimentos), orçamentos, ordens de serviço e lançamentos financeiros. Cada empresa só acessa os próprios dados.</p>
+      <p className="mt-2">Conta e empresa (nome, e-mail, telefone, CNPJ ou CPF), cadastro de clientes da assistência (nome, telefone, e-mail, endereço, equipamentos e histórico de atendimentos), orçamentos e lançamentos financeiros. Cada empresa só acessa os próprios dados.</p>
       <h2 className="mt-6">Finalidades</h2>
       <p className="mt-2">Operar o sistema: atendimento, orçamento, cobrança e relacionamento. Mensagens de marketing só são enviadas a clientes que deram consentimento, e o cliente pode retirá-lo a qualquer momento.</p>
       <h2 className="mt-6">Retenção</h2>

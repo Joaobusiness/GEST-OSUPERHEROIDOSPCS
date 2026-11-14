@@ -18,10 +18,10 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
     <>
       <PageHeader title={`${q.number} rev. ${q.revision}`} sub="Editar orçamento" />
       <QuoteForm
-        customers={d.customers} orders={d.orders} settings={d.settings}
+        customers={d.customers} settings={d.settings}
         revisesDecided={q.status !== "DRAFT" && q.status !== "SENT"}
         initial={{
-          id: q.id, customerId: q.customerId, serviceOrderId: q.serviceOrderId ?? "",
+          id: q.id, customerId: q.customerId,
           items: q.items.map((i) => ({ kind: i.kind, description: i.description, quantity: i.quantity.toString(), unitCost: i.unitCost.toString(), unitPrice: i.unitPrice.toString() })),
           discount: q.discount.toString(), extraFee: q.extraFee.toString(), uberMode: q.uberMode, uberCost: q.uberCost.toString(), uberMarkup: q.uberMarkup,
           validUntil: q.validUntil ? q.validUntil.toISOString().slice(0, 10) : "", executionDays: q.executionDays?.toString() ?? "",

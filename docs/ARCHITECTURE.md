@@ -26,20 +26,20 @@ Monolito modular em Next.js 16 (App Router) + TypeScript strict + Tailwind 4 + P
 `src/server/finance.ts` (dono: Financeiro). Outros módulos só chamam estas funções:
 
 ```ts
-createReceivable(db, { customerId, serviceOrderId?, quoteId?, amount, description, dueDate, allocationKey }): Promise<FinancialTransaction>
+createReceivable(db, { customerId, quoteId?, amount, description, dueDate, allocationKey }): Promise<FinancialTransaction>
 registerPayment(db, transactionId, { amount, method?, paidAt? }): Promise<FinancialTransaction> // parcial; PAID quando soma >= valor
 onQuoteApproved(db, quoteId): Promise<void>  // idempotente (allocationKey): receita principal, receita de repasse (SEPARATE), custo do Uber (todos os modos, nunca 2x)
 onOrderDelivered(db, orderId): Promise<void> // garante recebível se não houver orçamento aprovado
 ```
 
-`src/server/orders.ts`: `nextOrderNumber(tx, tenantId)`, `src/server/quotes.ts`: `nextQuoteNumber(tx, tenantId)` usam `Tenant.orderSeq/quoteSeq` com `UPDATE ... RETURNING` na mesma transação.
+`src/server/quotes.ts`: `nextQuoteNumber(tx, tenantId)` usam `Tenant.quoteSeq` com `UPDATE ... RETURNING` na mesma transação.
 
 `src/server/crm.ts` (dono: CRM): `touchLastContact(db, customerId)`, `customerTimeline(db, customerId)`.
 
 ## Regras de negócio críticas
 
-- Status da OS e status financeiro são independentes. Concluída não é paga.
-- Orçamento aprovado é snapshot imutável; alterar gera nova revisão (`revision+1`, `parentQuoteId`). Aprovado converte em OS sem redigitação.
+- Não há ordem de serviço no MVP: o orçamento aprovado é o registro do serviço e gera o financeiro.
+- Orçamento aprovado é snapshot imutável; alterar gera nova revisão (`revision+1`, `parentQuoteId`).
 - Uber: INCLUDED (dentro do custo), SEPARATE (linha própria; repasse puro ou com margem), ABSORBED (custo do negócio, sem receita). O custo entra **uma vez** em qualquer modo; lançamentos usam `allocationKey` único por tenant.
 - Pendente nunca é "recebido". Indicadores: recebido = soma de `TransactionPayment` no período (caixa).
 - Marketing exige `marketingConsent = true` e `marketingOptOut = false`. Mensagem operacional não exige. Nunca presumir consentimento.
