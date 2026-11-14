@@ -12,8 +12,16 @@ const security = [
 ];
 
 const nextConfig: NextConfig = {
+  compress: true, // gzip no self-host; a Vercel serve Brotli automaticamente
+  poweredByHeader: false,
+  images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 60 * 60 * 24 * 30 },
+  experimental: { optimizePackageImports: ["lucide-react"] },
   async headers() {
-    return [{ source: "/:path*", headers: security }];
+    return [
+      { source: "/:path*", headers: security },
+      // SW nunca pode ficar preso em cache HTTP, senão updates não chegam.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }, { key: "Content-Type", value: "text/javascript; charset=utf-8" }] },
+    ];
   },
   // Every page here is per-user (session cookie + tenant data), so nothing is prerendered.
   cacheComponents: false,

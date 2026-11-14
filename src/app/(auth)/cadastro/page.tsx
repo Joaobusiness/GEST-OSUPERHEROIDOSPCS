@@ -13,7 +13,7 @@ export default function RegisterPage() {
         <Field name="business" label="Nome da assistência"><Input name="business" autoComplete="organization" required /></Field>
         <Field name="name" label="Seu nome"><Input name="name" autoComplete="name" required /></Field>
         <Field name="email" label="E-mail"><Input name="email" type="email" inputMode="email" autoComplete="email" required /></Field>
-        <Field name="phone" label="WhatsApp (opcional)" hint="Com DDD. Aparece nos orçamentos."><Input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(65) 99999-9999" /></Field>
+        <Field name="phone" label="WhatsApp (opcional)" hint="Com DDD. Aparece nos orçamentos."><Input name="phone" type="tel" inputMode="tel" autoComplete="tel" mask="phone" placeholder="(65) 99999-9999" /></Field>
         <Field name="password" label="Senha" hint="Mínimo de 8 caracteres."><Input name="password" type="password" autoComplete="new-password" minLength={8} required /></Field>
         <SubmitButton pendingText="Criando…">Criar conta</SubmitButton>
       </ActionForm>

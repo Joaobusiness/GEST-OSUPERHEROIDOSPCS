@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { done, fail, optional, parse, uuid, type ActionState } from "@/lib/action";
-import { isValidDocument, toE164 } from "@/lib/br";
+import { isValidDocument, onlyDigits, toE164 } from "@/lib/br";
 import { requireAuth } from "@/server/auth";
 import {
   CrmError, DEVICE_CATEGORIES, createCustomer, deleteCustomer, deleteDevice, saveDevice, updateCustomer,
@@ -18,7 +18,7 @@ const customerSchema = z.object({
   name: z.string().min(2, "Informe o nome.").max(150),
   phone,
   whatsapp: optional(phone),
-  document: optional(z.string().refine(isValidDocument, "CPF ou CNPJ inválido.")),
+  document: optional(z.string().refine(isValidDocument, "CPF ou CNPJ inválido.").transform(onlyDigits)),
   email: optional(z.string().email("E-mail inválido.").max(150)),
   address: optional(z.string().max(300)),
   notes: optional(z.string().max(2000)),

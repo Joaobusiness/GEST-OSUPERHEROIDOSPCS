@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import type { ActionState } from "@/lib/action";
+import { MASKS, type MaskName } from "@/lib/mask";
 
 export function SubmitButton({ children, className = "btn btn-primary", pendingText = "Salvando…" }: { children: React.ReactNode; className?: string; pendingText?: string }) {
   const { pending } = useFormStatus();
@@ -81,6 +82,18 @@ export function Field({ name, label, hint, children }: { name: string; label: st
   );
 }
 
-export const Input = (p: React.InputHTMLAttributes<HTMLInputElement>) => <input className="input" {...p} />;
+/** `mask` formats as the user types (uncontrolled inputs). The server validates and stores digits. */
+export function Input({ mask, onInput, ...p }: React.InputHTMLAttributes<HTMLInputElement> & { mask?: MaskName }) {
+  return (
+    <input
+      className="input"
+      {...p}
+      onInput={(e) => {
+        if (mask) { const el = e.currentTarget; const v = MASKS[mask](el.value); if (v !== el.value) el.value = v; }
+        onInput?.(e);
+      }}
+    />
+  );
+}
 export const Textarea = (p: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea className="input" {...p} />;
 export const Select = (p: React.SelectHTMLAttributes<HTMLSelectElement>) => <select className="input" {...p} />;
