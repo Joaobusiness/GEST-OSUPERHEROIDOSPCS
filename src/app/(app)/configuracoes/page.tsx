@@ -1,3 +1,4 @@
+import { maskCep, maskDocument } from "@/lib/mask";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui";
 import { ActionForm, Field, Input, Select, SubmitButton } from "@/components/form";
@@ -32,10 +33,10 @@ export default async function Page() {
             <fieldset disabled={!isAdmin} className="grid gap-4 border-0 p-0">
               <Field name="name" label="Nome da assistência"><Input name="name" defaultValue={tenant.name} required /></Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="document" label="CNPJ ou CPF"><Input name="document" inputMode="numeric" defaultValue={tenant.document ?? ""} /></Field>
+                <Field name="document" label="CNPJ ou CPF"><Input name="document" inputMode="numeric" mask="document" defaultValue={tenant.document ? maskDocument(tenant.document) : ""} /></Field>
                 <Field name="email" label="E-mail"><Input name="email" type="email" defaultValue={tenant.email} required /></Field>
-                <Field name="phone" label="Telefone"><Input name="phone" type="tel" defaultValue={tenant.phone ? formatPhone(tenant.phone) : ""} /></Field>
-                <Field name="whatsapp" label="WhatsApp"><Input name="whatsapp" type="tel" defaultValue={tenant.whatsapp ? formatPhone(tenant.whatsapp) : ""} /></Field>
+                <Field name="phone" label="Telefone"><Input name="phone" type="tel" inputMode="tel" mask="phone" defaultValue={tenant.phone ? formatPhone(tenant.phone) : ""} /></Field>
+                <Field name="whatsapp" label="WhatsApp"><Input name="whatsapp" type="tel" inputMode="tel" mask="phone" defaultValue={tenant.whatsapp ? formatPhone(tenant.whatsapp) : ""} /></Field>
               </div>
               <div className="grid grid-cols-[1fr_6rem] gap-3">
                 <Field name="street" label="Rua"><Input name="street" defaultValue={a.street ?? ""} /></Field>
@@ -43,7 +44,7 @@ export default async function Page() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field name="district" label="Bairro"><Input name="district" defaultValue={a.district ?? ""} /></Field>
-                <Field name="zip" label="CEP"><Input name="zip" inputMode="numeric" defaultValue={a.zip ?? ""} /></Field>
+                <Field name="zip" label="CEP"><Input name="zip" inputMode="numeric" autoComplete="postal-code" mask="cep" defaultValue={a.zip ? maskCep(a.zip) : ""} /></Field>
               </div>
               <div className="grid grid-cols-[1fr_6rem] gap-3">
                 <Field name="city" label="Cidade"><Input name="city" defaultValue={a.city ?? ""} /></Field>

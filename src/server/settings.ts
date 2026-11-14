@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { TenantDb } from "@/lib/db";
 import { fail, done, moneyStr, optional, pctStr, type ActionState } from "@/lib/action";
-import { isValidDocument, toE164 } from "@/lib/br";
+import { isValidDocument, onlyDigits, toE164 } from "@/lib/br";
 import { hashPassword } from "@/server/auth";
 
 export type Ctx = { db: TenantDb; tenantId: string; role: "ADMIN" | "MEMBER"; userId: string };
@@ -32,12 +32,12 @@ const phoneField = (msg: string) => optional(z.string().refine((s) => toE164(s) 
 
 export const businessSchema = z.object({
   name: z.string().min(2, "Informe o nome da assistência.").max(150),
-  document: optional(z.string().refine(isValidDocument, "CPF ou CNPJ inválido.")),
+  document: optional(z.string().refine(isValidDocument, "CPF ou CNPJ inválido.").transform(onlyDigits)),
   email: z.string().max(254).email("E-mail inválido.").transform((s) => s.toLowerCase()),
   phone: phoneField("Telefone inválido. Use DDD + número."),
   whatsapp: phoneField("WhatsApp inválido. Use DDD + número."),
   street: optional(z.string().max(150)), number: optional(z.string().max(20)), district: optional(z.string().max(100)),
-  city: optional(z.string().max(100)), state: optional(z.string().max(2, "Use a sigla (ex.: MT).")), zip: optional(z.string().max(20)),
+  city: optional(z.string().max(100)), state: optional(z.string().max(2, "Use a sigla (ex.: MT).")), zip: optional(z.string().max(20).transform((s) => s.replace(/D/g, ""))),
   timezone: z.enum(TIMEZONES as [string, ...string[]], "Fuso inválido."),
 });
 
