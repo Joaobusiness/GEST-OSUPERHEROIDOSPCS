@@ -32,7 +32,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   }
 
   const p = d.estimatedProfit;
-  const shown = d.alerts.filter((a) => a.count > 0 && a.key !== "late");
+  const shown = d.alerts.filter((a) => a.count > 0);
 
   return (
     <>
@@ -40,21 +40,21 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <PeriodFilter base="/" period={period} />
 
       <section aria-label="Dinheiro no período" className="hero rise p-5">
-        <p className="text-sm font-medium text-white/80">Recebido, {period.label.toLowerCase()}</p>
+        <p className="text-sm font-medium text-white">Recebido, {period.label.toLowerCase()}</p>
         <p className="num mt-1 text-[2.25rem] font-bold leading-none text-white">{money(d.received)}</p>
-        <p className="mt-2 text-sm text-white/80">Só o que já caiu na mão. O que ainda está pendente não entra.</p>
+        <p className="mt-2 text-sm text-white">Só o que já caiu na mão. O que ainda está pendente não entra.</p>
         <dl className="mt-4 grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
           <div>
-            <dt className="text-sm text-white/80">Despesas pagas</dt>
+            <dt className="text-sm text-white">Despesas pagas</dt>
             <dd className="num text-lg font-semibold">{money(d.spent)}</dd>
           </div>
           <div>
-            <dt className="text-sm text-white/80">Lucro estimado</dt>
+            <dt className="text-sm text-white">Lucro estimado</dt>
             <dd className="num text-lg font-semibold text-white">{money(p.profit)}</dd>
           </div>
         </dl>
         <details className="mt-3 border-t border-white/20">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-white/80 [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-white [&::-webkit-details-marker]:hidden">
             Como chegamos no lucro estimado
           </summary>
           <div className="grid gap-2 pb-2 text-sm">
@@ -64,13 +64,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <Row t="Menos o custo de peças, mão de obra e Uber" v={`- ${money(p.costs)}`} />
               <Row t="Lucro estimado" v={money(p.profit)} strong />
             </dl>
-            <p className="text-white/80">Usa os custos e percentuais guardados em cada orçamento. É uma estimativa e não olha o que já foi pago.</p>
+            <p className="text-white">Usa os custos e percentuais guardados em cada orçamento. É uma estimativa e não olha o que já foi pago.</p>
           </div>
         </details>
       </section>
 
       <section aria-labelledby="atencao" className="mt-6">
-        <h2 id="atencao" className="mb-2">Pra ver agora</h2>
+        <h2 id="atencao" className="mb-2">Para ver agora</h2>
         {shown.length === 0 ? (
           <p className="card card-pad text-[var(--text-2)]">Tudo em dia por aqui. Nenhum orçamento, prazo ou conta esperando você.</p>
         ) : (

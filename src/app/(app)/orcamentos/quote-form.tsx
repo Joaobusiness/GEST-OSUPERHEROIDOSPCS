@@ -74,7 +74,7 @@ export function QuoteForm({ customers, settings, initial, revisesDecided }: Quot
       <Card icon={Package} title="Produtos / peças">
         <ItemsEditor items={products} onChange={setProducts} kind="PART" addLabel="Adicionar produto" placeholder="Ex.: SSD 480 GB" />
         <p className="flex justify-between border-t border-[var(--line)] pt-3 font-semibold"><span className="text-[var(--text-2)]">Subtotal</span><span className="num">{money(itemsTotal(products))}</span></p>
-        <p className="err" data-field="items" data-err aria-live="polite" />
+        <div data-field="items"><p className="err" data-err aria-live="polite" /></div>
       </Card>
 
       <Card icon={Route} title="Deslocamento">

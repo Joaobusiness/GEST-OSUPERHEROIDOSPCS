@@ -15,6 +15,7 @@ export const verifyPassword = (hashed: string, p: string) => verify(hashed, p);
 export async function createSession(userId: string, tenantId: string | null) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + DAYS * 86_400_000);
+  await prisma.session.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } }); // expired rows never pile up
   await prisma.session.create({ data: { id: sha(token), userId, tenantId, expiresAt } });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
@@ -43,7 +44,7 @@ export async function getSession() {
 /** Logged-in tenant user. Redirects otherwise. Suspended tenants are sent to /suspenso. */
 export async function requireAuth() {
   const s = await getSession();
-  if (!s) redirect("/login");
+  if (!s) redirect("/login?sessao=expirada");
   if (!s.tenantId) redirect(s.user.isSuperAdmin ? "/admin" : "/login");
   const [tenant, membership] = await Promise.all([
     prisma.tenant.findUnique({ where: { id: s.tenantId } }),
@@ -68,6 +69,12 @@ export async function audit(tenantId: string | null, userId: string | null, acti
 const attempts = new Map<string, { n: number; reset: number }>();
 export function throttle(key: string, max = 8, windowMs = 15 * 60_000) {
   const now = Date.now();
+  if (attempts.size > 50_000) { // keys are attacker-chosen: keep the map bounded, scan only past the cap
+    for (const [k, v] of attempts) if (v.reset < now) attempts.delete(k);
+    // shortcut: still flooded, so drop IP counters first and per-account login counters last; move to Redis with several instances
+    for (const k of [...attempts.keys()]) { if (attempts.size <= 40_000) break; if (!k.startsWith("login-acct:")) attempts.delete(k); }
+    for (const k of [...attempts.keys()]) { if (attempts.size <= 40_000) break; attempts.delete(k); }
+  }
   const a = attempts.get(key);
   if (!a || a.reset < now) { attempts.set(key, { n: 1, reset: now + windowMs }); return true; }
   a.n += 1;

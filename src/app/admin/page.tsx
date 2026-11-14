@@ -10,12 +10,12 @@ export default async function Page() {
   const [stats, tenants] = await Promise.all([platformStats(), listTenants()]);
   const items: [string, string][] = [
     ["Empresas", String(stats.tenants)], ["Empresas ativas", String(stats.activeTenants)], ["Usuários", String(stats.users)],
-    ["Ordens de serviço", String(stats.orders)], ["Receita mensal recorrente", money(stats.mrr)],
+    ["Receita mensal recorrente", money(stats.mrr)],
   ];
   return (
     <>
       <PageHeader title="Empresas" sub="Visão da plataforma. Só contagens, nunca dados de clientes das empresas." />
-      <dl className="card mb-6 grid grid-cols-2 gap-px overflow-hidden bg-[var(--line)] sm:grid-cols-5">
+      <dl className="card mb-6 grid grid-cols-2 gap-px overflow-hidden bg-[var(--line)] sm:grid-cols-4">
         {items.map(([k, v]) => (
           <div key={k} className="bg-[var(--card)] p-4">
             <dt className="text-[0.8125rem] text-[var(--text-2)]">{k}</dt>

@@ -37,4 +37,14 @@ describe("tenant isolation (forTenant)", () => {
     expect(catsA.every((c) => c.tenantId === a.tenantId)).toBe(true);
     expect(await b.db.financialCategory.findFirst({ where: { id: catsA[0].id } })).toBeNull();
   });
+
+  it("update cannot move a row to another tenant", async () => {
+    const a = await makeTenant("A");
+    const b = await makeTenant("B");
+    const c = await makeCustomer(a.db, "Fixo na A");
+    await a.db.customer.update({ where: { id: c.id }, data: { name: "Renomeado", tenantId: b.tenantId } as never });
+    await a.db.customer.updateMany({ where: { id: c.id }, data: { tenantId: b.tenantId } as never });
+    expect((await a.db.customer.findFirst({ where: { id: c.id } }))?.tenantId).toBe(a.tenantId);
+    expect(await b.db.customer.count()).toBe(0);
+  });
 });

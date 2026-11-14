@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { done, fail, moneyStr, optional, parse, uuid, type ActionState } from "@/lib/action";
+import { done, fail, moneyStr, optional, parse, uuid, ymd, type ActionState } from "@/lib/action";
 import { requireAuth } from "./auth";
 import { cancelTransaction, createTransaction, FinanceError, registerPayment } from "./finance";
 
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data.");
+const day = ymd("Informe a data.");
 
 const refresh = () => {
   revalidatePath("/financeiro");
@@ -35,7 +35,6 @@ export async function createTransactionAction(_: ActionState, fd: FormData): Pro
     amount: moneyStr,
     dueDate: day,
     customerId: optional(uuid),
-    serviceOrderId: optional(uuid),
     paymentMethod: optional(z.string().max(40)),
   }), fd);
   if ("state" in p) return p.state;

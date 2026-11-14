@@ -6,6 +6,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "sw
 
 export const metadata: Metadata = {
   title: { default: "Super Herói dos PCs", template: "%s · Super Herói dos PCs" },
+  robots: { index: false, follow: false },
   description: "Gestão de assistência técnica: clientes, orçamentos, preço certo e financeiro.",
 };
 

@@ -4,11 +4,13 @@ import { loginAction } from "@/server/auth-actions";
 
 export const metadata = { title: "Entrar" };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ sessao?: string }> }) {
+  const { sessao } = await searchParams;
   return (
     <>
       <h1 className="mb-1">Entrar</h1>
       <p className="mb-5 text-[0.9375rem] text-[var(--text-2)]">Acesse a sua assistência.</p>
+      {sessao === "expirada" && <p role="status" className="chip chip-warn mb-4 !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">Sua sessão expirou. Entre de novo para continuar.</p>}
       <ActionForm action={loginAction}>
         <Field name="email" label="E-mail"><Input name="email" type="email" inputMode="email" autoComplete="email" required /></Field>
         <Field name="password" label="Senha"><Input name="password" type="password" autoComplete="current-password" required /></Field>

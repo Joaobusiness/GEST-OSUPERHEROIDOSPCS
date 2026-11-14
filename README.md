@@ -19,7 +19,7 @@ Contas locais do seed (somente desenvolvimento):
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
 | Assistência demo | `demo@superheroi.local` | `Demo!12345` |
-| Super Admin (`/admin`) | `admin@superheroi.local` | `ChangeMe!12345` |
+| Super Admin (`/admin`) | `admin@superheroi.local` | definida em `SEED_ADMIN_PASSWORD`; se vazia, o seed gera uma e mostra uma vez |
 
 Em produção defina `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` antes do seed e troque a senha.
 

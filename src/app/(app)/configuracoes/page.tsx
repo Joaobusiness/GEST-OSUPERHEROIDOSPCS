@@ -82,7 +82,6 @@ export default async function Page() {
                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                   <Field name="inactiveDays" label="Cliente sumido depois de (dias)"><Input name="inactiveDays" inputMode="numeric" defaultValue={st.inactiveDays} /></Field>
-                  <Field name="warrantyAlertDays" label="Avisar da garantia (dias antes)"><Input name="warrantyAlertDays" inputMode="numeric" defaultValue={st.warrantyAlertDays} /></Field>
                 </div>
                 {isAdmin && <SubmitButton>Salvar</SubmitButton>}
               </fieldset>
@@ -102,7 +101,7 @@ export default async function Page() {
               {isAdmin && m.userId !== user.id && (
                 <ActionForm action={removeMemberAction} className="shrink-0">
                   <input type="hidden" name="userId" value={m.userId} />
-                  <ConfirmButton message={`Remover ${m.name} da equipe? O acesso é encerrado agora.`}>Remover</ConfirmButton>
+                  <ConfirmButton message={`Remover ${m.name} da equipe? O acesso é encerrado agora.`} label={`Remover ${m.name}`}>Remover</ConfirmButton>
                 </ActionForm>
               )}
             </div>

@@ -13,6 +13,7 @@ const PRINT_CSS = `
 @page { size: A4; margin: 14mm; }
 @media print {
   aside, nav, header { display: none !important; }
+  .paper header { display: grid !important; }
   body { background: #fff !important; }
   main { max-width: none !important; padding: 0 !important; }
   .paper-wrap { background: none !important; padding: 0 !important; border-radius: 0 !important; }

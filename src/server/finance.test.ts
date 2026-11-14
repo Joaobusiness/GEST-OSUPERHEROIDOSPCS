@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeCustomer, makeTenant } from "../../tests/helpers";
-import { cancelTransaction, createReceivable, onOrderDelivered, onQuoteApproved, registerPayment, cashSummary, resolvePeriod } from "./finance";
+import { cancelTransaction, createReceivable, onQuoteApproved, registerPayment, cashSummary, resolvePeriod } from "./finance";
 
 const due = new Date("2026-05-10T00:00:00Z");
 
@@ -91,20 +91,5 @@ describe("onQuoteApproved", () => {
     expect(r).toHaveLength(2);
     expect(find(r, ":uber-income")).toBeUndefined();
     expect(find(r, ":uber-cost")).toBeDefined();
-  });
-});
-
-describe("onOrderDelivered", () => {
-  it("creates one receivable for an order without quote, skips zero totals", async () => {
-    const { db } = await makeTenant("o1");
-    const c = await makeCustomer(db);
-    const mk = (n: string, total: string) => db.serviceOrder.create({ data: { customerId: c.id, orderNumber: n, description: "d", totalAmount: total } as never });
-    const o = await mk("1", "150");
-    await onOrderDelivered(db, o.id);
-    await onOrderDelivered(db, o.id);
-    await onOrderDelivered(db, (await mk("2", "0")).id);
-    const r = await db.financialTransaction.findMany();
-    expect(r).toHaveLength(1);
-    expect(r[0].allocationKey).toBe(`order:${o.id}:main`);
   });
 });

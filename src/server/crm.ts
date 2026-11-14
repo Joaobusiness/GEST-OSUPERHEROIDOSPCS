@@ -39,8 +39,11 @@ export async function updateCustomer(db: TenantDb, id: string, i: CustomerInput)
   return db.customer.update({ where: { id }, data: { ...customerData(i), address: i.address ? { text: i.address } : (null as never) } as never });
 }
 
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Active (not soft-deleted) customer of this tenant or CrmError. */
 export async function getCustomer(db: TenantDb, id: string) {
+  if (!UUID_RE.test(id)) throw new CrmError("Cliente não encontrado.");
   const c = await db.customer.findFirst({ where: { id, deletedAt: null } });
   if (!c) throw new CrmError("Cliente não encontrado.");
   return c;
@@ -57,28 +60,27 @@ export async function listCustomers(db: TenantDb, q?: string) {
       orderBy: { name: "asc" },
       take: 200, // shortcut: no pagination, add cursor paging past ~200 matches
       include: {
-        orders: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
-        quotes: { where: { status: "SENT" }, take: 1, select: { id: true } },
+        quotes: { where: { status: { in: ["SENT", "APPROVED"] } }, orderBy: { createdAt: "desc" }, select: { status: true, decidedAt: true, createdAt: true } },
       },
     }),
     inactiveDays(db),
   ]);
   const now = Date.now();
   return rows.map((c) => {
-    const ref = c.orders[0]?.createdAt ?? c.createdAt;
-    return { ...c, inactive: now - ref.getTime() >= days * DAY, pendingQuote: c.quotes.length > 0 };
+    const done = c.quotes.find((x) => x.status === "APPROVED");
+    const ref = done?.decidedAt ?? done?.createdAt ?? c.createdAt;
+    return { ...c, inactive: now - ref.getTime() >= days * DAY, pendingQuote: c.quotes.some((x) => x.status === "SENT") };
   });
 }
 
 /** Soft delete when there is history, hard delete otherwise. Returns which one happened. */
 export async function deleteCustomer(db: TenantDb, id: string): Promise<"soft" | "hard"> {
   await getCustomer(db, id);
-  const [orders, quotes, tx] = await Promise.all([
-    db.serviceOrder.count({ where: { customerId: id } }),
+  const [quotes, tx] = await Promise.all([
     db.quote.count({ where: { customerId: id } }),
     db.financialTransaction.count({ where: { customerId: id } }),
   ]);
-  if (orders + quotes + tx > 0) {
+  if (quotes + tx > 0) {
     await db.customer.update({ where: { id }, data: { deletedAt: new Date() } });
     return "soft";
   }
@@ -110,8 +112,6 @@ export async function saveDevice(db: TenantDb, customerId: string, deviceId: str
 export async function deleteDevice(db: TenantDb, customerId: string, deviceId: string) {
   const d = await db.customerDevice.findFirst({ where: { id: deviceId, customerId } });
   if (!d) throw new CrmError("Equipamento não encontrado.");
-  if ((await db.serviceOrder.count({ where: { deviceId } })) > 0)
-    throw new CrmError("Este equipamento tem ordens de serviço e não pode ser excluído.");
   await db.customerDevice.delete({ where: { id: deviceId } });
 }
 
@@ -120,12 +120,11 @@ export type TimelineEvent = { at: Date; kind: string; title: string; detail?: st
 /** Everything that happened with a customer, newest first. */
 export async function customerTimeline(db: TenantDb, customerId: string): Promise<TimelineEvent[]> {
   const c = await getCustomer(db, customerId);
-  const [devices, quotes, orders, payments, interactions] = await Promise.all([
+  const [devices, quotes, payments, interactions] = await Promise.all([
     db.customerDevice.findMany({ where: { customerId } }),
     db.quote.findMany({ where: { customerId } }),
-    db.serviceOrder.findMany({ where: { customerId } }),
     db.transactionPayment.findMany({
-      where: { transaction: { type: "INCOME", OR: [{ customerId }, { serviceOrder: { customerId } }] } },
+      where: { transaction: { type: "INCOME", customerId } },
       include: { transaction: { select: { description: true } } },
     }),
     db.customerInteraction.findMany({ where: { customerId } }),
@@ -137,16 +136,6 @@ export async function customerTimeline(db: TenantDb, customerId: string): Promis
     ev.push({ at: q.sentAt ?? q.createdAt, kind: "orcamento", title: `Orçamento ${q.number} emitido`, href });
     if (q.decidedAt && (q.status === "APPROVED" || q.status === "REJECTED"))
       ev.push({ at: q.decidedAt, kind: "orcamento", title: `Orçamento ${q.number} ${q.status === "APPROVED" ? "aprovado" : "recusado"}`, href });
-  }
-  for (const o of orders) {
-    const href = `/ordens/${o.id}`;
-    ev.push({ at: o.createdAt, kind: "os", title: `OS ${o.orderNumber} aberta`, detail: o.description, href });
-    if (o.completedAt) ev.push({ at: o.completedAt, kind: "os", title: `OS ${o.orderNumber} concluída`, href });
-    if (o.deliveredAt) {
-      ev.push({ at: o.deliveredAt, kind: "os", title: `OS ${o.orderNumber} entregue`, href });
-      if (o.warrantyDays > 0)
-        ev.push({ at: new Date(o.deliveredAt.getTime() + o.warrantyDays * DAY), kind: "garantia", title: `Garantia da OS ${o.orderNumber} termina`, detail: `${o.warrantyDays} dias`, href });
-    }
   }
   for (const p of payments) ev.push({ at: p.paidAt, kind: "pagamento", title: `Pagamento recebido: ${p.transaction.description}`, detail: BRL.format(Number(p.amount)) });
   for (const i of interactions) ev.push({ at: i.createdAt, kind: "contato", title: `Contato por ${i.channel}`, detail: [i.result, i.note].filter(Boolean).join(" - ") || undefined });

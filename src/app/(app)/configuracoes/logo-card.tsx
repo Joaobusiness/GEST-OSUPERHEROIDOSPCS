@@ -50,7 +50,7 @@ export function LogoCard({ current, isAdmin }: { current: string; isAdmin: boole
         {err && <p role="alert" className="err">{err}</p>}
         {isAdmin && (
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="btn btn-quiet cursor-pointer sm:col-span-1">
+            <label className="btn btn-quiet cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)] sm:col-span-1">
               <ImageUp size={18} aria-hidden /> Escolher imagem
               <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
             </label>

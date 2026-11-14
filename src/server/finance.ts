@@ -156,27 +156,25 @@ function checkAmount(v: Decimal.Value) {
   return a;
 }
 
-async function assertOwned(db: TenantDb, ids: { customerId?: string | null; serviceOrderId?: string | null; quoteId?: string | null }) {
-  const [c, o, q] = await Promise.all([
+async function assertOwned(db: TenantDb, ids: { customerId?: string | null; quoteId?: string | null }) {
+  const [c, q] = await Promise.all([
     ids.customerId ? db.customer.findFirst({ where: { id: ids.customerId }, select: { id: true } }) : true,
-    ids.serviceOrderId ? db.serviceOrder.findFirst({ where: { id: ids.serviceOrderId }, select: { id: true } }) : true,
     ids.quoteId ? db.quote.findFirst({ where: { id: ids.quoteId }, select: { id: true } }) : true,
   ]);
   if (!c) throw new FinanceError("Cliente não encontrado.");
-  if (!o) throw new FinanceError("Ordem de serviço não encontrada.");
   if (!q) throw new FinanceError("Orçamento não encontrado.");
 }
 
 /** Idempotent per allocationKey: a second call returns the existing row. */
 export async function createReceivable(
   db: TenantDb,
-  i: { customerId: string; serviceOrderId?: string | null; quoteId?: string | null; amount: Decimal.Value; description: string; dueDate: Date; allocationKey: string },
+  i: { customerId: string; quoteId?: string | null; amount: Decimal.Value; description: string; dueDate: Date; allocationKey: string },
 ): Promise<FinancialTransaction> {
   const amount = checkAmount(i.amount);
   await assertOwned(db, i);
   const category = await ensureCategory(db, "Serviços", "INCOME");
   return createOnce(db, {
-    type: "INCOME", categoryId: category.id, customerId: i.customerId, serviceOrderId: i.serviceOrderId ?? null,
+    type: "INCOME", categoryId: category.id, customerId: i.customerId,
     quoteId: i.quoteId ?? null, amount: amount.toFixed(2), description: i.description, dueDate: i.dueDate, allocationKey: i.allocationKey,
   });
 }
@@ -184,7 +182,7 @@ export async function createReceivable(
 /** Manual INCOME/EXPENSE entry from the Financeiro screen. */
 export async function createTransaction(
   db: TenantDb,
-  i: { type: "INCOME" | "EXPENSE"; description: string; categoryId: string; amount: Decimal.Value; dueDate: Date; customerId?: string | null; serviceOrderId?: string | null; paymentMethod?: string | null },
+  i: { type: "INCOME" | "EXPENSE"; description: string; categoryId: string; amount: Decimal.Value; dueDate: Date; customerId?: string | null; paymentMethod?: string | null },
 ) {
   const amount = checkAmount(i.amount);
   const cat = await db.financialCategory.findFirst({ where: { id: i.categoryId } });
@@ -193,7 +191,7 @@ export async function createTransaction(
   return db.financialTransaction.create({
     data: scoped({
       type: i.type, categoryId: i.categoryId, amount: amount.toFixed(2), description: i.description, dueDate: i.dueDate,
-      customerId: i.customerId ?? null, serviceOrderId: i.serviceOrderId ?? null, paymentMethod: i.paymentMethod ?? null,
+      customerId: i.customerId ?? null, paymentMethod: i.paymentMethod ?? null,
     }),
   });
 }
@@ -268,7 +266,7 @@ export async function onQuoteApproved(db: TenantDb, quoteId: string): Promise<vo
   }
   const main = total.minus(uberCharge);
   const dueDate = todayDate();
-  const base = { quoteId: q.id, serviceOrderId: q.serviceOrderId };
+  const base = { quoteId: q.id };
   const label = `orçamento ${q.number}`;
 
   if (main.gt(0)) {
@@ -291,23 +289,6 @@ export async function onQuoteCanceled(db: TenantDb, quoteId: string): Promise<vo
   for (const r of rows) await cancelTransaction(db, r.id);
 }
 
-/** Ensures a receivable exists. Orders with an approved quote are covered by onQuoteApproved. */
-export async function onOrderDelivered(db: TenantDb, orderId: string): Promise<void> {
-  const o = await db.serviceOrder.findFirst({ where: { id: orderId } });
-  if (!o) throw new FinanceError("Ordem de serviço não encontrada.");
-  const approved = await db.quote.findFirst({ where: { serviceOrderId: orderId, status: "APPROVED" }, select: { id: true } });
-  if (approved) return onQuoteApproved(db, approved.id);
-  if (D(o.totalAmount).lte(0)) return;
-  await createReceivable(db, {
-    customerId: o.customerId, serviceOrderId: o.id, amount: o.totalAmount.toString(),
-    description: `Ordem de serviço ${o.orderNumber}`, dueDate: todayDate(), allocationKey: `order:${o.id}:main`,
-  });
-}
-
-// ---------------------------------------------------------------- reads
-
-type Range = { gte: Date; lt: Date };
-const cashRange = (p: Period): Range => ({ gte: p.start, lt: p.end });
 
 /** open = PENDING amount minus what was already paid on those rows. */
 export async function openBalance(db: TenantDb, type: "INCOME" | "EXPENSE", overdueBefore?: Date) {
@@ -395,11 +376,10 @@ export async function transactionsCsv(db: TenantDb, period: Period, tz = TZ) {
   return "﻿" + [head.join(";"), ...lines].join("\r\n");
 }
 
-/** Orders opened in the period, by status. */
-export async function ordersByStatus(db: TenantDb, period: Period) {
-  const g = await db.serviceOrder.groupBy({ by: ["status"], where: { createdAt: cashRange(period) }, _count: { _all: true } });
-  return g.map((r) => ({ status: r.status, count: r._count._all }));
-}
+// ---------------------------------------------------------------- reads
+
+type Range = { gte: Date; lt: Date };
+const cashRange = (p: Period): Range => ({ gte: p.start, lt: p.end });
 
 /** Cash flow rows for reports. shortcut: folds in JS, fine up to tens of thousands of payments per period; move to SQL GROUP BY after that. */
 export async function cashReport(db: TenantDb, period: Period, tz = TZ) {

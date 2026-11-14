@@ -79,7 +79,7 @@ export function Calculator({ initial }: { initial: SimInput }) {
         {r && (
           <div className="hero grid gap-5 p-5">
             <div>
-              <p className="text-sm text-white/80">O cliente paga</p>
+              <p className="text-sm text-white">O cliente paga</p>
               <p className="num text-[2.5rem] font-bold leading-tight text-white">{brl(r.finalPrice)}</p>
             </div>
             <dl className="grid gap-2.5 border-t border-white/20 pt-4 text-[0.9375rem]">
@@ -108,7 +108,7 @@ export function Calculator({ initial }: { initial: SimInput }) {
 function Row({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-white/80">{k}</dt>
+      <dt className="text-white">{k}</dt>
       <dd className={`num ${strong ? "font-bold" : "font-medium"}`}>{v}</dd>
     </div>
   );

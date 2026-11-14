@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { SideNav, TabBar } from "@/components/shell";
 import { Logo } from "@/components/ui";
+import { OfflineBanner } from "@/components/offline-banner";
 import { requireAuth } from "@/server/auth";
 import { logoutAction } from "@/server/auth-actions";
 
@@ -18,6 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <div className="min-w-0">
+        <OfflineBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[var(--ink)] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-[var(--on-ink)] lg:hidden">
           <Link href="/" aria-label="Início"><Logo height={44} /></Link>
           <p className="min-w-0 truncate text-sm font-medium text-[var(--on-ink-2)]">{tenant.name}</p>

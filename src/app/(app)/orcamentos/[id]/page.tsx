@@ -8,6 +8,7 @@ import { whatsappLink } from "@/lib/br";
 import { requireAuth } from "@/server/auth";
 import { dec, uberCharge } from "@/server/line-items";
 import { approveAction, cancelAction, rejectAction } from "@/server/quotes-actions";
+import { ConfirmButton } from "../../clientes/confirm-button";
 import { WhatsAppButton } from "../share-buttons";
 
 const KIND = { PART: "Peça", LABOR: "Mão de obra", OTHER: "Outro" };
@@ -86,7 +87,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           )}
           <div className="grid grid-cols-2 gap-3">
             {open && <ActionForm action={rejectAction}><input type="hidden" name="id" value={q.id} /><SubmitButton className="btn btn-quiet w-full">Marcar recusado</SubmitButton></ActionForm>}
-            {(open || q.status === "APPROVED") && <ActionForm action={cancelAction}><input type="hidden" name="id" value={q.id} /><SubmitButton className="btn btn-danger w-full">Cancelar</SubmitButton></ActionForm>}
+            {(open || q.status === "APPROVED") && <ActionForm action={cancelAction}><input type="hidden" name="id" value={q.id} /><ConfirmButton message="Cancelar este orçamento? Os valores a receber ligados a ele também serão cancelados." className="btn btn-danger w-full">Cancelar orçamento</ConfirmButton></ActionForm>}
           </div>
         </section>
 

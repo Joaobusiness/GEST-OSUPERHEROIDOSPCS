@@ -24,14 +24,14 @@ Não é ERP. É uma plataforma enxuta feita para a rotina de técnico de inform�
 
 ## Operating Context
 
-Fluxo: cliente e equipamento, problema e diagnóstico, orçamento, aprovação, execução, conclusão, entrega com pagamento e garantia. Status da OS e status financeiro são independentes. Compartilhamento de orçamento por PDF e link de WhatsApp com texto preenchido. Sem disparo automático de WhatsApp. Há também um painel Super Admin separado para o dono da plataforma (empresas, planos, assinaturas manuais).
+Fluxo: cliente e equipamento, problema e diagnóstico, orçamento, aprovação, execução e pagamento. O orçamento aprovado é o registro do serviço (não há ordem de serviço no MVP). Compartilhamento de orçamento por PDF e link de WhatsApp com texto preenchido. Sem disparo automático de WhatsApp. Há também um painel Super Admin separado para o dono da plataforma (empresas, planos, assinaturas manuais).
 
 ## Capabilities and Constraints
 
-- Menu: Início, Clientes, Ordens de serviço, Orçamentos, Precificação, Financeiro, Remarketing, Relatórios, Configurações.
+- Menu: Início, Clientes, Orçamentos, Precificação, Financeiro, Remarketing, Relatórios, Configurações.
 - Dashboard é a primeira tela após login; filtros de período (hoje, 7 dias, 30 dias, mês atual, mês anterior, personalizado).
 - Interface responsiva (celular, tablet, desktop), com estados de carregamento, vazio e erro, e confirmação em ações destrutivas.
-- Fluxos curtos e pouca digitação: cadastro de cliente só com campos essenciais, OS em poucos passos.
+- Fluxos curtos e pouca digitação: cadastro de cliente só com campos essenciais, orçamento em poucos passos.
 - Indicadores financeiros com conceitos explícitos; faturamento nunca é apresentado como lucro; pendente nunca conta como recebido.
 - Valores monetários em precisão decimal; datas em UTC, exibidas no fuso da empresa.
 - Segurança e LGPD desde a modelagem: isolamento por tenant_id, preferências de comunicação, marketing só com consentimento.

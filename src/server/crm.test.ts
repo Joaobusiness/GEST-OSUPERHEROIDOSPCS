@@ -20,7 +20,7 @@ describe("crm", () => {
     const { db } = await makeTenant("crm-del");
     const clean = await createCustomer(db, { ...base, name: "Sem historico" });
     const used = await createCustomer(db, { ...base, name: "Com historico" });
-    await db.serviceOrder.create({ data: { customerId: used.id, orderNumber: "1", description: "Formatar" } as never });
+    await db.quote.create({ data: { customerId: used.id, number: "1", status: "APPROVED" } as never });
     expect(await deleteCustomer(db, clean.id)).toBe("hard");
     expect(await deleteCustomer(db, used.id)).toBe("soft");
     expect(await listCustomers(db)).toHaveLength(0);
@@ -38,15 +38,13 @@ describe("crm", () => {
     const { db } = await makeTenant("crm-tl");
     const c = await createCustomer(db, { ...base, name: "Ana", notes: "Prefere manha" });
     await saveDevice(db, c.id, undefined, { category: "Desktop", brand: "Dell" });
-    const delivered = new Date(Date.now() - 10 * 86_400_000);
-    await db.serviceOrder.create({ data: { customerId: c.id, orderNumber: "7", description: "Trocar SSD", status: "DELIVERED", deliveredAt: delivered, warrantyDays: 90 } as never });
+    await db.quote.create({ data: { customerId: c.id, number: "7", status: "APPROVED", decidedAt: new Date(Date.now() - 10 * 86_400_000) } as never });
     await db.customerInteraction.create({ data: { customerId: c.id, result: "Respondeu" } as never });
     await touchLastContact(db, c.id);
     expect((await getCustomer(db, c.id)).lastContactAt).not.toBeNull();
     const tl = await customerTimeline(db, c.id);
     const kinds = tl.map((e) => e.kind);
-    expect(kinds).toEqual(expect.arrayContaining(["cadastro", "equipamento", "os", "garantia", "contato", "nota"]));
+    expect(kinds).toEqual(expect.arrayContaining(["cadastro", "equipamento", "orcamento", "contato", "nota"]));
     expect(tl.map((e) => +e.at)).toEqual([...tl.map((e) => +e.at)].sort((x, y) => y - x));
-    expect(tl[0].kind).toBe("garantia"); // warranty end lies in the future
   });
 });

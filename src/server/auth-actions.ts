@@ -10,8 +10,10 @@ import { toE164 } from "@/lib/br";
 import { audit, createSession, destroySession, hashPassword, throttle, verifyPassword } from "./auth";
 import { bootstrapTenant } from "./tenant";
 
+// verified when the e-mail is unknown, so response time does not reveal which e-mails have an account
+const DUMMY_HASH = hashPassword("dummy-password-for-timing");
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
-const email = z.string().email("E-mail inválido.").transform((s) => s.toLowerCase());
+const email = z.string().max(254).email("E-mail inválido.").transform((s) => s.toLowerCase());
 const password = z.string().min(8, "Use ao menos 8 caracteres.").max(200);
 
 async function ip() {
@@ -21,9 +23,9 @@ async function ip() {
 
 export async function registerAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const p = parse(z.object({
-    name: z.string().min(2, "Informe seu nome."),
-    business: z.string().min(2, "Informe o nome da assistência."),
-    email, password, phone: optional(z.string()),
+    name: z.string().min(2, "Informe seu nome.").max(150),
+    business: z.string().min(2, "Informe o nome da assistência.").max(150),
+    email, password, phone: optional(z.string().max(30)),
   }), fd);
   if ("state" in p) return p.state;
   const { data } = p;
@@ -46,14 +48,15 @@ export async function registerAction(_: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function loginAction(_: ActionState, fd: FormData): Promise<ActionState> {
-  const p = parse(z.object({ email, password: z.string().min(1, "Informe a senha.") }), fd);
+  const p = parse(z.object({ email, password: z.string().min(1, "Informe a senha.").max(200) }), fd);
   if ("state" in p) return p.state;
   const { data } = p;
   // two keys: rotating x-forwarded-for cannot bypass the per-account limit
   if (!throttle(`login:${await ip()}:${data.email}`) || !throttle(`login-acct:${data.email}`, 20)) return fail("Muitas tentativas. Aguarde alguns minutos.");
   const user = await prisma.user.findUnique({ where: { email: data.email }, include: { memberships: true } });
   // same message for unknown e-mail and wrong password: no account enumeration
-  if (!user || !(await verifyPassword(user.passwordHash, data.password))) return fail("E-mail ou senha incorretos.");
+  const valid = await verifyPassword(user?.passwordHash ?? (await DUMMY_HASH), data.password).catch(() => false);
+  if (!user || !valid) return fail("E-mail ou senha incorretos.");
   const tenantId = user.memberships[0]?.tenantId ?? null;
   await createSession(user.id, tenantId);
   await audit(tenantId, user.id, "auth.login");
@@ -69,6 +72,8 @@ export async function forgotPasswordAction(_: ActionState, fd: FormData): Promis
   const p = parse(z.object({ email }), fd);
   if ("state" in p) return p.state;
   if (!throttle(`forgot:${await ip()}`, 5)) return fail("Muitas tentativas. Aguarde alguns minutos.");
+  // per-account cap answers like success: no account enumeration, no visible lockout
+  if (!throttle(`forgot-acct:${p.data.email}`, 6)) return done("Se o e-mail existir, enviamos o link de redefinição.");
   const user = await prisma.user.findUnique({ where: { email: p.data.email } });
   if (user) {
     const token = randomBytes(32).toString("base64url");
@@ -84,6 +89,7 @@ export async function forgotPasswordAction(_: ActionState, fd: FormData): Promis
 export async function resetPasswordAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const p = parse(z.object({ token: z.string().min(10), password }), fd);
   if ("state" in p) return p.state;
+  if (!throttle(`reset:${await ip()}`, 10)) return fail("Muitas tentativas. Aguarde alguns minutos.");
   const r = await prisma.passwordReset.findUnique({ where: { id: sha(p.data.token) } });
   if (!r || r.usedAt || r.expiresAt < new Date()) return fail("Link inválido ou expirado. Peça um novo.");
   await prisma.$transaction([

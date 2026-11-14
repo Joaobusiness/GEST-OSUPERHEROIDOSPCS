@@ -59,9 +59,9 @@ export default async function Financeiro({ searchParams }: { searchParams: Promi
 
       <section aria-label="Resumo do período" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="hero rise p-5 col-span-2 lg:col-span-4">
-          <p className="text-sm font-medium text-white/80">{hero.label}</p>
+          <p className="text-sm font-medium text-white">{hero.label}</p>
           <p className={`num mt-1 break-words text-[2.5rem] font-bold leading-none tracking-tight sm:text-5xl ${hero.value.isNeg() ? "text-[#ffd0cb]" : ""}`}>{money(hero.value)}</p>
-          <p className="mt-3 max-w-[48ch] text-sm text-white/80">{hero.note}</p>
+          <p className="mt-3 max-w-[48ch] text-sm text-white">{hero.note}</p>
         </div>
         <Stat icon={ArrowDownLeft} tone="tile-ok" label={cash ? "Recebido" : "Receitas"} value={money(inV)} on={f.type === "INCOME" && (cash ? f.paid : !f.status && !f.open && !f.overdue && !f.paid)}
           href={`/financeiro${qs({ ...base, tipo: "INCOME", pago: cash ? "1" : undefined })}`} />

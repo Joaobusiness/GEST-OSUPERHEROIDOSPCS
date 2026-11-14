@@ -31,13 +31,13 @@ export const TIMEZONES = [
 const phoneField = (msg: string) => optional(z.string().refine((s) => toE164(s) !== null, msg));
 
 export const businessSchema = z.object({
-  name: z.string().min(2, "Informe o nome da assistência."),
+  name: z.string().min(2, "Informe o nome da assistência.").max(150),
   document: optional(z.string().refine(isValidDocument, "CPF ou CNPJ inválido.")),
-  email: z.string().email("E-mail inválido.").transform((s) => s.toLowerCase()),
+  email: z.string().max(254).email("E-mail inválido.").transform((s) => s.toLowerCase()),
   phone: phoneField("Telefone inválido. Use DDD + número."),
   whatsapp: phoneField("WhatsApp inválido. Use DDD + número."),
-  street: optional(z.string()), number: optional(z.string()), district: optional(z.string()),
-  city: optional(z.string()), state: optional(z.string().max(2, "Use a sigla (ex.: MT).")), zip: optional(z.string()),
+  street: optional(z.string().max(150)), number: optional(z.string().max(20)), district: optional(z.string().max(100)),
+  city: optional(z.string().max(100)), state: optional(z.string().max(2, "Use a sigla (ex.: MT).")), zip: optional(z.string().max(20)),
   timezone: z.enum(TIMEZONES as [string, ...string[]], "Fuso inválido."),
 });
 
@@ -48,7 +48,6 @@ export const pricingSchema = z.object({
   defaultUberMode: z.enum(["INCLUDED", "SEPARATE", "ABSORBED"]),
   uberMarkup: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
   inactiveDays: z.coerce.number().int("Use um número inteiro.").min(1, "Mínimo 1 dia.").max(3650),
-  warrantyAlertDays: z.coerce.number().int("Use um número inteiro.").min(1, "Mínimo 1 dia.").max(365),
 });
 
 export async function updateBusiness(c: Ctx, d: z.infer<typeof businessSchema>) {
@@ -70,8 +69,8 @@ export async function updatePricingSettings(c: Ctx, d: z.infer<typeof pricingSch
 }
 
 export const memberSchema = z.object({
-  name: z.string().min(2, "Informe o nome."),
-  email: z.string().email("E-mail inválido.").transform((s) => s.toLowerCase()),
+  name: z.string().min(2, "Informe o nome.").max(150),
+  email: z.string().max(254).email("E-mail inválido.").transform((s) => s.toLowerCase()),
   password: z.string().min(8, "Use ao menos 8 caracteres.").max(200),
 });
 

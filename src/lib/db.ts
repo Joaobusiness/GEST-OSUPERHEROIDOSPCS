@@ -11,7 +11,7 @@ if (process.env.NODE_ENV !== "production") g.prisma = prisma;
 
 /** Models that carry tenantId. Every query on them goes through forTenant(). */
 const TENANT_MODELS = new Set([
-  "Customer", "CustomerDevice", "ServiceOrder", "ServiceOrderItem", "ServiceOrderStatusLog",
+  "Customer", "CustomerDevice",
   "Quote", "QuoteItem", "FinancialCategory", "FinancialTransaction", "TransactionPayment",
   "PricingSimulation", "CommunicationTemplate", "Campaign", "CampaignContact",
   "CustomerInteraction", "PricingSettings", "TenantUser", "Subscription", "AuditLog",
@@ -19,7 +19,7 @@ const TENANT_MODELS = new Set([
 
 const WHERE_OPS = new Set([
   "findMany", "findFirst", "findFirstOrThrow", "findUnique", "findUniqueOrThrow",
-  "count", "aggregate", "groupBy", "updateMany", "deleteMany", "update", "delete",
+  "count", "aggregate", "groupBy", "updateMany", "updateManyAndReturn", "deleteMany", "update", "delete",
 ]);
 
 /**
@@ -36,6 +36,8 @@ export function forTenant(tenantId: string) {
           const a = args as Record<string, unknown>;
           if (WHERE_OPS.has(operation)) {
             a.where = { ...((a.where as object) ?? {}), tenantId };
+            // an update can never move a row to another tenant
+            if (a.data && typeof a.data === "object") delete (a.data as Record<string, unknown>).tenantId;
           } else if (operation === "create") {
             a.data = { ...(a.data as object), tenantId };
           } else if (operation === "createMany" || operation === "createManyAndReturn") {

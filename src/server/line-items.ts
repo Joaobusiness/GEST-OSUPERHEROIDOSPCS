@@ -3,6 +3,9 @@ import Decimal from "decimal.js";
 import { z } from "zod";
 import { calculatePrice, type UberMode } from "@/lib/pricing";
 
+/** Largest value the Decimal(12,2) columns hold. */
+export const MAX_MONEY = new Decimal("9999999999.99");
+
 export type Kind = "PART" | "LABOR" | "OTHER";
 export type Line = { kind: Kind; description: string; quantity: string; unitCost: string; unitPrice: string };
 
@@ -20,9 +23,9 @@ export const itemsCost = (items: Pick<Line, "quantity" | "unitCost">[]) =>
   items.reduce((a, i) => a.plus(lineTotal(i.quantity, i.unitCost)), new Decimal(0));
 
 const norm = (s: string) => (s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s);
-const amount = z.string().transform(norm).refine((s) => /^\d+(\.\d{1,2})?$/.test(s), "Valor inválido nos itens.");
+const amount = z.string().transform(norm).refine((s) => /^\d{1,8}(\.\d{1,2})?$/.test(s), "Valor inválido nos itens.");
 // a negative unit price is a discount line (created when a quote with discount becomes an order)
-const signed = z.string().transform(norm).refine((s) => /^-?\d+(\.\d{1,2})?$/.test(s), "Valor inválido nos itens.");
+const signed = z.string().transform(norm).refine((s) => /^-?\d{1,10}(\.\d{1,2})?$/.test(s), "Valor inválido nos itens.");
 
 /** Zod schema for the JSON `items` form field. */
 export const itemsField = z.preprocess((s) => { try { return JSON.parse(String(s || "[]")); } catch { return null; } },
