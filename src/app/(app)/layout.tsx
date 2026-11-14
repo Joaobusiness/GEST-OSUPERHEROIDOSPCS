@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="min-w-0">
         <OfflineBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[var(--ink)] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-[var(--on-ink)] lg:hidden">
-          <Link href="/" aria-label="Início"><Logo height={44} /></Link>
+          <Link href="/" aria-label="Início"><Logo height={44} priority /></Link>
           <p className="min-w-0 truncate text-sm font-medium text-[var(--on-ink-2)]">{tenant.name}</p>
         </header>
         <main className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4 lg:px-8 lg:pt-8">{children}</main>

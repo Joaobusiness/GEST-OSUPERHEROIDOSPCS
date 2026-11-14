@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Público: sem dados de empresa ou usuário. Sem service worker de propósito (nada autenticado em cache).
+// Público: sem dados de empresa ou usuário. O service worker (public/sw.js) só cacheia assets estáticos; nada autenticado em cache.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Super Herói dos PCs",
