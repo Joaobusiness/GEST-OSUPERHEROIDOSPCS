@@ -44,7 +44,8 @@ export async function getSession() {
 /** Logged-in tenant user. Redirects otherwise. Suspended tenants are sent to /suspenso. */
 export async function requireAuth() {
   const s = await getSession();
-  if (!s) redirect("/login?sessao=expirada");
+  // the "expired" notice only makes sense when there was a cookie; a first visit goes to a clean login
+  if (!s) redirect((await cookies()).has(COOKIE) ? "/login?sessao=expirada" : "/login");
   if (!s.tenantId) redirect(s.user.isSuperAdmin ? "/admin" : "/login");
   const [tenant, membership] = await Promise.all([
     prisma.tenant.findUnique({ where: { id: s.tenantId } }),
