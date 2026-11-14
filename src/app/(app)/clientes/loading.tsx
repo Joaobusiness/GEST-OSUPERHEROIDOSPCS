@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui";
 
 export default function Loading() {
-  return <Skeleton rows={6} />;
+  return <Skeleton header rows={6} />;
 }

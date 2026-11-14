@@ -43,6 +43,8 @@
   --shadow-2: 0 2px 4px rgba(10, 12, 16, 0.06), 0 14px 36px rgba(10, 12, 16, 0.12);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --tabbar-h: 64px;
+  --skeleton-a: #e3e7ee;
+  --skeleton-b: #f2f4f8;
 }
 
 /* Motion tokens: transitions.dev shared scale (.agents/skills/transitions-polish). Reference these, never literal ms. */
@@ -191,9 +193,11 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   .seg > [aria-current="true"] { background: var(--ink); color: var(--on-ink); }
 
   .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-  .skeleton { background: linear-gradient(90deg, #e9ebef 25%, #f3f4f6 50%, #e9ebef 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-md); }
+  .skeleton { background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-md); }
 }
 
+/* Preloader só aparece se a página demorar (>150ms): evita flash em navegação rápida. */
+.skeleton-wrap { animation: rise var(--duration-fast) var(--ease-smooth-out) 150ms both; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .rise { animation: rise var(--duration-fast) var(--ease-smooth-out) both; }
