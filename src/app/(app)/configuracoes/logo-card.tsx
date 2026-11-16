@@ -28,7 +28,7 @@ async function shrink(file: File): Promise<string> {
 function Picker({ onPick }: { onPick: (f?: File) => void }) {
   const { pending } = useFormStatus();
   return (
-    <label className="btn btn-primary btn-sm cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]" aria-busy={pending}>
+    <label className="btn btn-primary btn-sm max-[420px]:w-full cursor-pointerfocus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]" aria-busy={pending}>
       {pending ? <><Loader2 size={16} className="animate-spin" aria-hidden /> Enviando…</> : "Mudar logo"}
       <input type="file" accept="image/png,image/jpeg,image/webp" disabled={pending} className="sr-only" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ""; }} />
     </label>
@@ -53,12 +53,12 @@ export function ProfileCard({ current, name, email, isAdmin }: { current: string
   return (
     <ActionForm action={updateLogoAction}>
       <input ref={hidden} type="hidden" name="logo" defaultValue={current} />
-      <div className="flex items-center gap-4 rounded-[var(--r-lg)] bg-[var(--card)] p-4 shadow-[var(--shadow-1)]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--r-lg)] bg-[var(--card)] p-4 shadow-[var(--shadow-1)]">
         <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--line)] bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {logo ? <img src={logo} alt="Logo da empresa" className="size-full object-contain p-1" /> : <span aria-hidden className="text-2xl font-bold text-[var(--accent)]">{name.trim().charAt(0).toUpperCase() || "?"}</span>}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[10rem] flex-1">
           <p className="truncate text-lg font-bold">{name}</p>
           <p className="truncate text-sm text-[var(--text-2)]">{email}</p>
           {isAdmin && logo && <button type="button" className="mt-1 min-h-11 text-sm font-semibold text-[var(--bad)]" onClick={() => { setLogo(""); send(""); }}>Remover logo</button>}
