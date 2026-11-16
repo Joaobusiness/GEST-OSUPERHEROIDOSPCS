@@ -109,7 +109,7 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
             <div className="grid min-w-0 gap-3">
               {tenant.logoUrl
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={tenant.logoUrl} alt={tenant.name} className="max-h-16 w-auto max-w-[220px] object-contain object-left" />
+                ? <img src={tenant.logoUrl} alt={tenant.name} className="max-h-28 w-auto max-w-[320px] object-contain object-left" />
                 : <p className="break-words text-3xl font-extrabold leading-tight tracking-tight">{tenant.name}</p>}
               <div className="grid gap-0.5 text-sm text-[var(--text-2)]">
                 {tenant.logoUrl && <p className="font-semibold text-[var(--ink)]">{tenant.name}</p>}
@@ -136,7 +136,6 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
 
           <section className="break-inside-avoid ml-auto grid w-full gap-1.5 text-[0.9375rem] sm:w-80">
             {uber.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Deslocamento</span><span className="num font-semibold">{money(uber)}</span></p>}
-            {q.extraFee.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Taxa extra</span><span className="num font-semibold">{money(q.extraFee)}</span></p>}
             {q.discount.gt(0) && <p className="flex justify-between"><span className="text-[var(--text-2)]">Desconto</span><span className="num font-semibold">- {money(q.discount)}</span></p>}
             <p className="mt-2 flex items-baseline justify-between gap-3 rounded-[var(--r-md)] bg-[var(--accent)] px-4 py-3 text-white">
               <span className="text-sm font-bold uppercase tracking-wide">Total</span><span className="num text-2xl font-extrabold">{money(q.totalAmount)}</span>

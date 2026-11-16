@@ -58,7 +58,6 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <dl className="grid gap-1.5 border-t border-[var(--line)] pt-3 text-[0.9375rem]">
             {uber.gt(0) && <div className="flex justify-between"><dt className="text-[var(--text-2)]">Deslocamento</dt><dd className="num font-semibold">{money(uber)}</dd></div>}
             {q.discount.gt(0) && <div className="flex justify-between"><dt className="text-[var(--text-2)]">Desconto</dt><dd className="num font-semibold">- {money(q.discount)}</dd></div>}
-            {q.extraFee.gt(0) && <div className="flex justify-between"><dt className="text-[var(--text-2)]">Taxa extra</dt><dd className="num font-semibold">{money(q.extraFee)}</dd></div>}
             <div className="flex items-baseline justify-between pt-1"><dt className="font-semibold">Total</dt><dd className="num text-2xl font-bold">{money(q.totalAmount)}</dd></div>
             <div className="flex justify-between"><dt className="text-[var(--text-2)]">Custo total</dt><dd className="num">{money(q.totalCost)}</dd></div>
           </dl>
