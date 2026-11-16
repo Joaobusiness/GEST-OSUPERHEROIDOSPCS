@@ -114,3 +114,16 @@ describe("history is not reinterpreted", () => {
     expect(fromSaved({ partCost: "218", laborCost: "", uberOn: true, uberCost: "30", markupPct: "60" }, defaults)).toEqual({ partCost: "218", laborCost: "", uberOn: true, uberCost: "30", markupPct: "60" });
   });
 });
+
+describe("Editar valor (final price typed on the quote)", () => {
+  const items: Line[] = [{ kind: "PART", description: "SSD", quantity: "1", unitCost: "218", unitPrice: "348.80" }];
+  const rates = { marginPct: "60", taxPct: "0", cardFeePct: "0" };
+  const u = { uberMode: "SEPARATE" as const, uberCost: "30", uberMarkup: false };
+  it("below the calculated total it becomes a discount, above it an extra fee; profit follows the typed value", () => {
+    // calculated: 348.80 + 30 Uber = 378.80
+    const down = quoteTotals(items, u, rates, "28.80", "0"); // typed 350
+    expect([down.totalAmount.toFixed(2), down.totalAmount.minus(down.totalCost).toFixed(2)]).toEqual(["350.00", "102.00"]);
+    const up = quoteTotals(items, u, rates, "0", "21.20"); // typed 400
+    expect([up.totalAmount.toFixed(2), up.totalAmount.minus(up.totalCost).toFixed(2)]).toEqual(["400.00", "152.00"]);
+  });
+});
