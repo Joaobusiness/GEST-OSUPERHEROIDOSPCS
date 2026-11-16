@@ -12,6 +12,7 @@ import { ConfirmButton } from "../../clientes/confirm-button";
 import { WhatsAppButton } from "../share-buttons";
 import { draftKey } from "../draft";
 import { DraftCleared } from "../draft-cleared";
+import { NetMargin } from "./net-margin";
 
 const KIND = { PART: "Peça", LABOR: "Mão de obra", OTHER: "Outro" };
 
@@ -62,6 +63,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             <div className="flex justify-between"><dt className="text-[var(--text-2)]">Custo total</dt><dd className="num">{money(q.totalCost)}</dd></div>
           </dl>
         </section>
+
+        <NetMargin cost={q.totalCost.toNumber()} />
 
         <section className="card card-pad grid gap-2 text-[0.9375rem]" aria-label="Condições">
           <p><span className="text-[var(--text-2)]">Válido até:</span> {dateBR(q.validUntil, tz)}</p>
