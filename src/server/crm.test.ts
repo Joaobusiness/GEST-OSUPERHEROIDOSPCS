@@ -5,15 +5,26 @@ import { createCustomer, customerTimeline, deleteCustomer, getCustomer, listCust
 const base = { phone: "+5565999990000", marketingConsent: false, marketingOptOut: false };
 
 describe("crm", () => {
+  it("paginates customers: 20 per page, every customer exactly once, page clamped", async () => {
+    const { db } = await makeTenant("crm-pg");
+    for (let i = 0; i < 45; i++) await createCustomer(db, { ...base, name: `Cliente ${String(i).padStart(2, "0")}` });
+    const p1 = await listCustomers(db, undefined, 1), p3 = await listCustomers(db, undefined, 3);
+    expect([p1.total, p1.pages, p1.rows.length, p3.rows.length]).toEqual([45, 3, 20, 5]);
+    const all = [p1, await listCustomers(db, undefined, 2), p3].flatMap((p) => p.rows.map((c) => c.id));
+    expect(new Set(all).size).toBe(45);
+    expect((await listCustomers(db, undefined, 99)).page).toBe(3);
+    expect((await listCustomers(db, "Cliente 4", 1)).total).toBe(5);
+  });
+
   it("searches by name, phone and document, and hides other tenants", async () => {
     const a = await makeTenant("crm-a");
     const b = await makeTenant("crm-b");
     await createCustomer(a.db, { ...base, name: "Maria Silva", document: "529.982.247-25" });
     await createCustomer(b.db, { ...base, name: "Maria Outra" });
-    expect((await listCustomers(a.db, "maria")).map((c) => c.name)).toEqual(["Maria Silva"]);
-    expect(await listCustomers(a.db, "65 99999")).toHaveLength(1);
-    expect(await listCustomers(a.db, "52998224725")).toHaveLength(1);
-    expect(await listCustomers(a.db, "zzz")).toHaveLength(0);
+    expect((await listCustomers(a.db, "maria")).rows.map((c) => c.name)).toEqual(["Maria Silva"]);
+    expect((await listCustomers(a.db, "65 99999")).rows).toHaveLength(1);
+    expect((await listCustomers(a.db, "52998224725")).rows).toHaveLength(1);
+    expect((await listCustomers(a.db, "zzz")).rows).toHaveLength(0);
   });
 
   it("soft deletes customers with history, hard deletes without", async () => {
@@ -23,7 +34,7 @@ describe("crm", () => {
     await db.quote.create({ data: { customerId: used.id, number: "1", status: "APPROVED" } as never });
     expect(await deleteCustomer(db, clean.id)).toBe("hard");
     expect(await deleteCustomer(db, used.id)).toBe("soft");
-    expect(await listCustomers(db)).toHaveLength(0);
+    expect((await listCustomers(db)).rows).toHaveLength(0);
     expect(await db.customer.count({ where: { id: used.id } })).toBe(1);
   });
 

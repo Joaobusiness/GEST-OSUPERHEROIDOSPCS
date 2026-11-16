@@ -11,7 +11,7 @@ async function setup() {
 }
 
 const settings = pricingSchema.parse({
-  partMarginPct: "35", laborMarginPct: "50", minMarginPct: "15", cardFeePct: "4", taxPct: "6",
+  markupPct: "135", laborMarginPct: "50", minMarginPct: "15", cardFeePct: "4", taxPct: "6",
   defaultUberCost: "10", otherCostsFixed: "0", defaultUberMode: "SEPARATE", uberMarkup: "on", inactiveDays: "90",
 });
 
@@ -22,8 +22,18 @@ describe("settings", () => {
     await expect(addMember(ctx("MEMBER"), { name: "X", email: "x@t.local", password: "12345678" })).rejects.toBeInstanceOf(ForbiddenError);
     await updatePricingSettings(ctx("ADMIN"), settings);
     const st = await prisma.pricingSettings.findUniqueOrThrow({ where: { tenantId } });
-    expect(st.partMarginPct.toString()).toBe("35");
+    expect(st.markupPct.toString()).toBe("135"); // markup may pass 100%
     expect(st.defaultUberMode).toBe("SEPARATE");
+  });
+
+  it("the settings form no longer sends the Uber mode: saving keeps what is stored", async () => {
+    const { tenantId, ctx } = await setup();
+    await updatePricingSettings(ctx("ADMIN"), settings);
+    await updatePricingSettings(ctx("ADMIN"), pricingSchema.parse({ markupPct: "60", defaultUberCost: "25", inactiveDays: "60" }));
+    const st = await prisma.pricingSettings.findUniqueOrThrow({ where: { tenantId } });
+    expect(st.markupPct.toString()).toBe("60");
+    expect(st.defaultUberMode).toBe("SEPARATE");
+    expect(st.uberMarkup).toBe(true);
   });
 
   it("the last ADMIN cannot be removed; a member can, and the account is deleted", async () => {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, FileText, Users, Wallet, Wrench } from "lucide-react";
+import { ChevronRight, FilePlus2, FileText, UserPlus, Users, Wallet, Wrench } from "lucide-react";
 import { Empty, PageHeader, money } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
 import { loadDashboard, type Alert } from "@/server/dashboard";
@@ -37,6 +37,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Início" sub={tenant.name} />
+      <nav aria-label="Atalhos" className="mb-4 grid grid-cols-2 gap-3">
+        <Link href="/orcamentos/novo" className="btn btn-primary !px-3"><FilePlus2 size={18} aria-hidden /> Novo orçamento</Link>
+        <Link href="/clientes/novo" className="btn btn-quiet !px-3"><UserPlus size={18} aria-hidden /> Novo cliente</Link>
+      </nav>
       <PeriodFilter base="/" period={period} />
 
       <section aria-label="Dinheiro no período" className="hero rise p-5">

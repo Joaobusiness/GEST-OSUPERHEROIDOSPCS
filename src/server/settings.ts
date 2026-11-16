@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { TenantDb } from "@/lib/db";
-import { fail, done, moneyStr, optional, pctStr, type ActionState } from "@/lib/action";
+import { fail, done, markupStr, moneyStr, optional, pctStr, type ActionState } from "@/lib/action";
 import { isValidDocument, onlyDigits, toE164 } from "@/lib/br";
 import { hashPassword } from "@/server/auth";
 
@@ -42,11 +42,12 @@ export const businessSchema = z.object({
 });
 
 export const pricingSchema = z.object({
-  partMarginPct: pctStr, defaultUberCost: moneyStr,
+  markupPct: markupStr, defaultUberCost: moneyStr,
   // Fora do MVP: o formulário não envia mais. Seguem opcionais para não apagar o que já está salvo.
   laborMarginPct: pctStr.optional(), minMarginPct: pctStr.optional(), cardFeePct: pctStr.optional(), taxPct: pctStr.optional(), otherCostsFixed: moneyStr.optional(),
-  defaultUberMode: z.enum(["INCLUDED", "SEPARATE", "ABSORBED"]),
-  uberMarkup: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
+  // Uber virou Sim/Não: o formulário não envia mais o modo. Opcionais para não apagar o que já está salvo.
+  defaultUberMode: z.enum(["INCLUDED", "SEPARATE", "ABSORBED"]).optional(),
+  uberMarkup: z.preprocess((v) => (v == null ? undefined : v === "on" || v === "true"), z.boolean().optional()),
   inactiveDays: z.coerce.number().int("Use um número inteiro.").min(1, "Mínimo 1 dia.").max(3650),
 });
 

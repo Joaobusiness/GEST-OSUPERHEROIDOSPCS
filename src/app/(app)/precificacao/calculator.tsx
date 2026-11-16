@@ -1,27 +1,48 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { FilePlus2 } from "lucide-react";
-import { calculatePrice, PricingError, brl, type UberMode } from "@/lib/pricing";
-import { ActionForm, Field, Input, Select, SubmitButton } from "@/components/form";
+import { calculatePrice, PricingError, brl } from "@/lib/pricing";
+import { ActionForm, Field, Input, SubmitButton, YesNo } from "@/components/form";
 import { saveSimulationAction } from "@/server/pricing-actions";
 import { toPricingInput, type SimInput } from "./sim";
 
-const UBER_HELP: Record<UberMode, string> = {
-  INCLUDED: "O Uber entra dentro do preço do serviço. O cliente não vê uma linha separada.",
-  SEPARATE: "O Uber aparece como uma linha à parte no orçamento. Você cobra o mesmo valor que pagou.",
-  ABSORBED: "Você paga o Uber e não cobra nada por ele. O valor sai do seu lucro.",
-};
+type Typed = "partCost" | "laborCost" | "uberCost" | "markupPct";
 
-type Typed = "partCost" | "laborCost" | "uberCost" | "marginPct";
+const storage = () => { try { return window.localStorage; } catch { return null; } };
+const noSubscribe = () => () => {};
 
-export function Calculator({ initial }: { initial: SimInput }) {
-  const [s, setS] = useState<SimInput>(initial);
+/** Keeps the account being typed on this device, so leaving for another module and coming back loses nothing. `draftKey` null = a saved simulation is open: never mixed with the draft. */
+export function Calculator({ initial, draftKey, defaultUberCost }: { initial: SimInput; draftKey: string | null; defaultUberCost: string }) {
+  const read = useRef<SimInput | null | undefined>(undefined);
+  const draft = useSyncExternalStore(noSubscribe, () => {
+    if (read.current !== undefined) return read.current;
+    try {
+      const d = draftKey ? JSON.parse(storage()?.getItem(draftKey) ?? "null") : null;
+      return (read.current = d && typeof d.markupPct === "string" && typeof d.uberOn === "boolean" ? { ...initial, ...d } : null);
+    } catch { return (read.current = null); }
+  }, () => null);
+  return <Calc key={draft ? "draft" : "clean"} initial={initial} start={draft ?? initial} draftKey={draftKey} defaultUberCost={defaultUberCost} />;
+}
+
+function Calc({ initial, start, draftKey, defaultUberCost }: { initial: SimInput; start: SimInput; draftKey: string | null; defaultUberCost: string }) {
+  const [s, setS] = useState<SimInput>(start);
+  const uberInput = useRef<HTMLInputElement>(null);
   const field = (k: Typed) => ({
     inputMode: "decimal" as const, autoComplete: "off", value: s[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setS((p) => ({ ...p, [k]: e.target.value })),
   });
+
+  useEffect(() => {
+    if (!draftKey || s === start) return;
+    try { if (s === initial) storage()?.removeItem(draftKey); else storage()?.setItem(draftKey, JSON.stringify(s)); } catch { /* storage full or blocked */ }
+  }, [s, start, initial, draftKey]);
+
+  const setUber = (on: boolean) => {
+    setS((p) => ({ ...p, uberOn: on, uberCost: !on ? "0" : Number(p.uberCost.replace(",", ".")) > 0 ? p.uberCost : Number(defaultUberCost) > 0 ? defaultUberCost : "" }));
+    if (on) requestAnimationFrame(() => uberInput.current?.focus());
+  };
 
   const out = useMemo(() => {
     const built = toPricingInput(s);
@@ -33,61 +54,52 @@ export function Calculator({ initial }: { initial: SimInput }) {
   }, [s]);
 
   const r = out.r;
-  const quoteHref = r
-    ? `/orcamentos/novo?${new URLSearchParams({
-        preco: r.finalPrice, custo: r.totalCost, uberModo: s.uberMode, uberCusto: r.logisticsCost, uberCobrado: r.uberCharge,
-        margem: s.marginPct, imposto: "0", cartao: "0",
-      })}`
-    : "#";
+  const quoteHref = r ? `/orcamentos/novo?${new URLSearchParams({ preco: r.finalPrice, custo: r.totalCost, uber: r.uberCharge })}` : "#";
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_24rem] lg:items-start">
       <section className="card card-pad grid gap-5" aria-label="Dados da simulação">
         <div className="grid gap-3">
           <h2>Quanto você gasta</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Field name="partCost" label="Peça (R$)"><Input {...field("partCost")} placeholder="0,00" /></Field>
-            <Field name="laborCost" label="Sua mão de obra (R$)"><Input {...field("laborCost")} placeholder="0,00" /></Field>
+          <div className="grid gap-3 min-[400px]:grid-cols-2">
+            <Field name="partCost" label="Peça (R$)"><Input {...field("partCost")} placeholder="0,00" enterKeyHint="next" /></Field>
+            <Field name="laborCost" label="Sua mão de obra (R$)"><Input {...field("laborCost")} placeholder="0,00" enterKeyHint="next" /></Field>
           </div>
-        </div>
-
-        <div className="grid gap-3">
-          <h2>Uber</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Field name="uberCost" label="Quanto custou o Uber (R$)"><Input {...field("uberCost")} placeholder="0,00" /></Field>
-            <Field name="uberMode" label="Como cobrar">
-              <Select value={s.uberMode} onChange={(e) => setS((p) => ({ ...p, uberMode: e.target.value as UberMode }))}>
-                <option value="INCLUDED">Dentro do preço</option>
-                <option value="SEPARATE">Linha separada</option>
-                <option value="ABSORBED">Eu pago, não cobro</option>
-              </Select>
-            </Field>
-          </div>
-          <p className="hint">{UBER_HELP[s.uberMode]}</p>
         </div>
 
         <div className="grid gap-3">
           <h2>Quanto você quer ganhar</h2>
-          <Field name="marginPct" label="Margem de lucro (%)" hint="É a parte do preço final que fica com você. Com 40%, de cada R$ 100 que o cliente paga, R$ 40 são lucro.">
-            <Input {...field("marginPct")} />
+          <Field name="markupPct" label="Margem de lucro (%)" hint="Calculada sobre o custo (markup). Com 60%, um custo de R$ 218,00 vira R$ 348,80.">
+            <Input {...field("markupPct")} />
           </Field>
         </div>
+
+        <div className="grid items-start gap-3 min-[400px]:grid-cols-2">
+          <YesNo legend="Uber" name="uberOn" value={s.uberOn} onChange={setUber} />
+          <div className="field">
+            <label className="field">
+              <span className="label">Valor do Uber (R$)</span>
+              <input ref={uberInput} className="input" {...field("uberCost")} value={s.uberOn ? s.uberCost : "0,00"} disabled={!s.uberOn} aria-describedby="calc-uber-hint" />
+            </label>
+            <p className="hint" id="calc-uber-hint">{s.uberOn ? "Somado ao preço, sem markup: o cliente repõe o que você gastou." : "Sem Uber nesta conta."}</p>
+          </div>
+        </div>
+        {s !== initial && <button type="button" className="btn btn-quiet btn-sm !min-h-11 justify-self-start" onClick={() => setS(initial)}>Limpar conta</button>}
       </section>
 
-      <section className="grid gap-4 lg:sticky lg:top-4" aria-label="Resultado" aria-live="polite">
+      <section className="grid gap-4 lg:sticky lg:top-4" aria-label="Resultado">
         {out.error && <p role="alert" className="chip chip-bad !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">{out.error}</p>}
         {r && (
           <div className="hero grid gap-5 p-5">
-            <div>
+            <div aria-live="polite">
               <p className="text-sm text-white">O cliente paga</p>
               <p className="num text-[2.5rem] font-bold leading-tight text-white">{brl(r.finalPrice)}</p>
             </div>
             <dl className="grid gap-2.5 border-t border-white/20 pt-4 text-[0.9375rem]">
-              <Row k={s.uberMode === "SEPARATE" ? "Serviço" : "Serviço (já com o Uber)"} v={brl(r.suggestedPrice)} />
-              {s.uberMode === "SEPARATE" && <Row k="Uber, em linha separada" v={brl(r.uberCharge)} />}
+              <Row k="Preço de venda" v={brl(r.suggestedPrice)} />
+              {s.uberOn && <Row k="Uber" v={brl(r.uberCharge)} />}
               <Row k="Você gasta" v={brl(r.totalCost)} />
-              <Row k="Sobra para você" v={brl(r.profit)} strong />
-              <Row k="Margem real" v={`${r.effectiveMarginPct.replace(".", ",")}%`} strong />
+              <Row k="Lucro bruto" v={brl(r.profit)} strong />
             </dl>
             <Link href={quoteHref} className="btn bg-white text-[var(--accent-press)] shadow-[0_8px_20px_rgba(0,0,0,.18)]"><FilePlus2 size={18} aria-hidden /> Criar orçamento com este preço</Link>
           </div>

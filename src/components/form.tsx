@@ -95,5 +95,21 @@ export function Input({ mask, onInput, ...p }: React.InputHTMLAttributes<HTMLInp
     />
   );
 }
+/** Sim/Não as two 44px radio pills (same look as the .seg filters). */
+export function YesNo({ legend, name, value, onChange }: { legend: string; name: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <fieldset className="field min-w-0 border-0 p-0">
+      <legend className="label mb-1.5">{legend}</legend>
+      <div className="seg justify-self-start !shadow-none ring-1 ring-[var(--line)]">
+        {[true, false].map((on) => (
+          <label key={String(on)} className="cursor-pointer !px-6">
+            <input type="radio" name={name} className="sr-only" checked={value === on} onChange={() => onChange(on)} />
+            {on ? "Sim" : "Não"}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 export const Textarea = (p: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea className="input" {...p} />;
 export const Select = (p: React.SelectHTMLAttributes<HTMLSelectElement>) => <select className="input" {...p} />;

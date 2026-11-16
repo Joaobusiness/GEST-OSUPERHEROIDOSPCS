@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { makeCustomer, makeTenant } from "../../tests/helpers";
 
 vi.mock("./finance", () => ({ onQuoteApproved: vi.fn(), onQuoteCanceled: vi.fn(), createReceivable: vi.fn(), registerPayment: vi.fn() }));
-import { approveQuote, saveQuote, type QuoteInput } from "./quotes";
-import { quoteTotals, suggestPrices } from "./line-items";
+import { approveQuote, listQuotes, saveQuote, type QuoteInput } from "./quotes";
+import { markupPrice, quoteTotals } from "./line-items";
 
 const base = (customerId: string, over: Partial<QuoteInput> = {}): QuoteInput => ({
   customerId, discount: "0", extraFee: "0", uberMode: "INCLUDED", uberCost: "0", uberMarkup: false,
@@ -21,13 +21,22 @@ describe("quote math", () => {
     expect(u("SEPARATE").totalAmount.toFixed(2)).toBe("388.11"); // 10 / (1 - 0.10) = 11.11 passes through
     for (const m of ["INCLUDED", "SEPARATE", "ABSORBED"] as const) expect(u(m).totalCost.toFixed(2)).toBe("230.00");
   });
-  it("suggests prices from cost via calculatePrice", () => {
-    const [part] = suggestPrices(base("x").items, { partMarginPct: "40", laborMarginPct: "50", taxPct: "6", cardFeePct: "4" }, { uberMode: "INCLUDED", uberCost: "0", uberMarkup: false });
-    expect(part.unitPrice).toBe("200.00"); // group cost 200 / (1 - 0.5) = 400, spread over 2 units
+  it("line price comes from cost with markup, never margin", () => {
+    expect(markupPrice("100.00", "40")).toBe("140.00"); // margin would give 166.67
   });
 });
 
 describe("quotes", () => {
+  it("paginates the list: newest first, no quote repeated across pages", async () => {
+    const t = await makeTenant("PG"); const c = await makeCustomer(t.db);
+    for (let i = 0; i < 5; i++) await saveQuote(t.db, t.tenantId, null, base(c.id));
+    const p1 = await listQuotes(t.db, { page: 1, size: 2 }), p3 = await listQuotes(t.db, { page: 3, size: 2 });
+    expect([p1.total, p1.pages, p1.rows.length, p3.rows.length]).toEqual([5, 3, 2, 1]);
+    const ids = [p1, await listQuotes(t.db, { page: 2, size: 2 }), p3].flatMap((p) => p.rows.map((q) => q.id));
+    expect(new Set(ids).size).toBe(5);
+    expect((await listQuotes(t.db, { page: 50, size: 2 })).page).toBe(3);
+  });
+
   it("numbers unique per tenant under concurrency", async () => {
     const t = await makeTenant("Q"); const c = await makeCustomer(t.db);
     const qs = await Promise.all(Array.from({ length: 6 }, () => saveQuote(t.db, t.tenantId, null, base(c.id))));

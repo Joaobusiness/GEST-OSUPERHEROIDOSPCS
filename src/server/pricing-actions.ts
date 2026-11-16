@@ -8,10 +8,7 @@ import { toPricingInput, type SimInput } from "@/app/(app)/precificacao/sim";
 import { requireAuth } from "./auth";
 
 const str = z.string().max(20);
-const simSchema = z.object({
-  partCost: str, laborCost: str, laborPrice: str, uberCost: str, uberMode: z.enum(["INCLUDED", "SEPARATE", "ABSORBED"]),
-  uberMarkup: z.boolean(), otherCosts: str, fixedFees: str, marginPct: str, taxPct: str, cardFeePct: str, manualPrice: str,
-});
+const simSchema = z.object({ partCost: str, laborCost: str, uberOn: z.boolean(), uberCost: str, markupPct: str });
 
 /** The result is recomputed here from the input; the client's numbers are never trusted. */
 export async function saveSimulationAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -21,10 +18,9 @@ export async function saveSimulationAction(_: ActionState, fd: FormData): Promis
   try { sim = simSchema.parse(JSON.parse(p.data.input)); } catch { return fail("Não deu para guardar essa conta. Refaça e tente de novo."); }
   const built = toPricingInput(sim);
   if ("error" in built) return fail(built.error);
-  const { db, tenantId } = await requireAuth();
-  const settings = await db.pricingSettings.findUnique({ where: { tenantId } });
+  const { db } = await requireAuth();
   let result;
-  try { result = calculatePrice(built.input, settings?.minMarginPct.toString()); } catch (e) {
+  try { result = calculatePrice(built.input); } catch (e) {
     if (e instanceof PricingError) return fail(e.message);
     throw e;
   }

@@ -1,7 +1,7 @@
 // Pure money math shared by orders, quotes and their client forms (no db, no server-only).
 import Decimal from "decimal.js";
 import { z } from "zod";
-import { calculatePrice, type UberMode } from "@/lib/pricing";
+import { legacyPriceFromMargin, priceFromMarkup, type UberMode } from "@/lib/pricing";
 
 /** Largest value the Decimal(12,2) columns hold. */
 export const MAX_MONEY = new Decimal("9999999999.99");
@@ -40,10 +40,16 @@ export const itemsField = z.preprocess((s) => { try { return JSON.parse(String(s
 export type UberInput = { uberMode: UberMode; uberCost: Decimal.Value; uberMarkup: boolean };
 export type Rates = { marginPct: Decimal.Value; taxPct: Decimal.Value; cardFeePct: Decimal.Value };
 
-/** Separate uber line the customer pays (SEPARATE only). Derived, so it needs no column. */
+/**
+ * Uber line the customer pays. Current rule: Uber "Sim" = SEPARATE, the amount typed is passed through.
+ * INCLUDED / ABSORBED / uberMarkup only exist on quotes saved before the Sim/Não change and keep their old math.
+ * `marginPct` is the quote's stored snapshot; it only matters for those legacy uberMarkup quotes.
+ */
 export function uberCharge(u: UberInput, r: Rates): Decimal {
-  if (u.uberMode !== "SEPARATE" || dec(u.uberCost).lte(0)) return new Decimal(0);
-  return new Decimal(calculatePrice({ ...r, uberCost: dec(u.uberCost), uberMode: "SEPARATE", uberMarkup: u.uberMarkup }).uberCharge);
+  const uber = dec(u.uberCost);
+  if (u.uberMode !== "SEPARATE" || uber.lte(0)) return new Decimal(0);
+  const fees = dec(r.taxPct).plus(dec(r.cardFeePct));
+  return (u.uberMarkup ? legacyPriceFromMargin(uber, dec(r.marginPct), fees) : uber.div(new Decimal(1).minus(fees.div(100)))).toDecimalPlaces(2);
 }
 
 export function quoteTotals(items: Line[], u: UberInput, r: Rates, discount: Decimal.Value, extraFee: Decimal.Value) {
@@ -55,29 +61,10 @@ export function quoteTotals(items: Line[], u: UberInput, r: Rates, discount: Dec
   return { itemsTotal: sub, uberCharge: uber, totalAmount, totalCost };
 }
 
-/**
- * Suggests unit prices from costs with calculatePrice: parts/other use the part margin, labor the labor margin.
- * The group price (uber folded in when INCLUDED) is spread over its items in proportion to cost.
- * shortcut: spreads by cost ratio and rounds per unit, so totals can drift by a few cents; zero-cost items keep their price.
- */
-export function suggestPrices(items: Line[], s: { partMarginPct: Decimal.Value; laborMarginPct: Decimal.Value; taxPct: Decimal.Value; cardFeePct: Decimal.Value }, u: UberInput): Line[] {
-  const out = items.map((i) => ({ ...i }));
-  const groups: Line[][] = [out.filter((i) => i.kind !== "LABOR"), out.filter((i) => i.kind === "LABOR")];
-  let uberUsed = false;
-  groups.forEach((g, gi) => {
-    const cost = itemsCost(g);
-    if (cost.lte(0)) return;
-    const carry = !uberUsed; uberUsed = true;
-    const r = calculatePrice({
-      [gi === 0 ? "partCost" : "laborCost"]: cost, marginPct: gi === 0 ? s.partMarginPct : s.laborMarginPct,
-      taxPct: s.taxPct, cardFeePct: s.cardFeePct,
-      uberCost: carry ? dec(u.uberCost) : 0, uberMode: u.uberMode, uberMarkup: u.uberMarkup,
-    });
-    for (const i of g) {
-      const c = lineTotal(i.quantity, i.unitCost);
-      if (c.lte(0)) continue;
-      i.unitPrice = new Decimal(r.suggestedPrice).times(c).div(cost).div(dec(i.quantity)).toDecimalPlaces(2).toFixed(2);
-    }
-  });
-  return out;
-}
+/** Unit price from unit cost and markup over cost: 218 at 60% = 348.80. */
+export const markupPrice = (unitCost: Decimal.Value, markupPct: Decimal.Value) =>
+  priceFromMarkup(dec(unitCost), dec(markupPct)).toDecimalPlaces(2).toFixed(2);
+
+/** Markup a line carries today, derived from its cost and price ("" when there is no cost to compare). */
+export const markupOf = (unitCost: Decimal.Value, unitPrice: Decimal.Value) =>
+  dec(unitCost).gt(0) ? dec(unitPrice).div(dec(unitCost)).minus(1).times(100).toDecimalPlaces(2).toString() : "";

@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 import type { Prisma, FinancialTransaction } from "@/generated/prisma/client";
 import type { TenantDb } from "@/lib/db";
-import { priceFromCost } from "@/lib/pricing";
+import { legacyPriceFromMargin } from "@/lib/pricing";
 
 /**
  * Finance service. Pure `(db: TenantDb, ...)` functions: no cookies, no redirect.
@@ -261,7 +261,7 @@ export async function onQuoteApproved(db: TenantDb, quoteId: string): Promise<vo
   let uberCharge = new Decimal(0);
   if (q.uberMode === "SEPARATE" && uber.gt(0)) {
     const fees = D(q.taxPct).plus(D(q.cardFeePct));
-    uberCharge = (q.uberMarkup ? priceFromCost(uber, D(q.marginPct), fees) : uber.div(new Decimal(1).minus(fees.div(100)))).toDecimalPlaces(2);
+    uberCharge = (q.uberMarkup ? legacyPriceFromMargin(uber, D(q.marginPct), fees) : uber.div(new Decimal(1).minus(fees.div(100)))).toDecimalPlaces(2);
     if (uberCharge.gt(total)) uberCharge = total; // manual price below the uber line
   }
   const main = total.minus(uberCharge);

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, CalendarClock, ChevronRight, Clock, Plus, Tags, type LucideIcon } from "lucide-react";
 import { Field, Input, Select } from "@/components/form";
-import { dateBR, Empty, money, PageHeader } from "@/components/ui";
+import { dateBR, Empty, money, PageHeader, Pager } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
 import { cashSummary, listTransactions, resolvePeriod, todayDate } from "@/server/finance";
 import { chipOff, first, PeriodFilter, qs, type SP } from "./parts";
@@ -144,13 +144,7 @@ export default async function Financeiro({ searchParams }: { searchParams: Promi
               );
             })}
           </ul>
-          {list.pages > 1 && (
-            <nav aria-label="Páginas" className="mt-3 flex items-center justify-between gap-3">
-              {list.page > 1 ? <Link href={pageHref(list.page - 1)} className="btn btn-quiet btn-sm">Anterior</Link> : <span />}
-              <span className="num text-sm text-[var(--text-2)]">{list.page} de {list.pages}</span>
-              {list.page < list.pages ? <Link href={pageHref(list.page + 1)} className="btn btn-quiet btn-sm">Próxima</Link> : <span />}
-            </nav>
-          )}
+          <Pager page={list.page} pages={list.pages} href={pageHref} />
         </>
       )}
     </>

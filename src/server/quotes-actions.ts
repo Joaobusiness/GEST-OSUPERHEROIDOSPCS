@@ -30,7 +30,7 @@ export async function saveQuoteAction(_: ActionState, fd: FormData): Promise<Act
   let to = "";
   const r = await wrap(async () => {
     const { quote, revised } = await saveQuote(db, tenantId, id ?? null, input);
-    to = `/orcamentos/${quote.id}${revised ? "?rev=1" : ""}`;
+    to = `/orcamentos/${quote.id}?salvo=${id ?? "novo"}${revised ? "&rev=1" : ""}`; // salvo: the detail page clears that draft
   });
   if (!r.ok) return r;
   revalidatePath("/orcamentos");

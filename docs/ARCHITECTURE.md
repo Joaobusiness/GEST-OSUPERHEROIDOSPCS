@@ -40,7 +40,9 @@ onOrderDelivered(db, orderId): Promise<void> // garante recebível se não houve
 
 - Não há ordem de serviço no MVP: o orçamento aprovado é o registro do serviço e gera o financeiro.
 - Orçamento aprovado é snapshot imutável; alterar gera nova revisão (`revision+1`, `parentQuoteId`).
-- Uber: INCLUDED (dentro do custo), SEPARATE (linha própria; repasse puro ou com margem), ABSORBED (custo do negócio, sem receita). O custo entra **uma vez** em qualquer modo; lançamentos usam `allocationKey` único por tenant.
+- Preço: markup sobre o custo (`priceFromMarkup`), nunca margem sobre o preço de venda. `legacyPriceFromMargin` só recalcula a linha de Uber de orçamentos antigos com `uberMarkup = true`.
+- Uber: a tela só oferece Sim/Não. Sim grava SEPARATE (linha própria, repasse do valor digitado); Não grava custo 0. INCLUDED, ABSORBED e `uberMarkup` existem só em orçamentos antigos e mantêm a conta original.
+- Rascunho do orçamento: `localStorage` por empresa + usuário + orçamento (`orcamentos/draft.ts`); descartado se o orçamento mudou no servidor (`updatedAt`), apagado ao salvar ou descartar. O custo entra **uma vez** em qualquer modo; lançamentos usam `allocationKey` único por tenant.
 - Pendente nunca é "recebido". Indicadores: recebido = soma de `TransactionPayment` no período (caixa).
 - Marketing exige `marketingConsent = true` e `marketingOptOut = false`. Mensagem operacional não exige. Nunca presumir consentimento.
 - Exclusão de cliente com histórico = lógica (`deletedAt`).

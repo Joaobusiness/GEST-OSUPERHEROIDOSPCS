@@ -4,13 +4,14 @@ import { uuid } from "@/lib/action";
 import { requireAuth } from "@/server/auth";
 import { quoteFormData } from "../../form-data";
 import { QuoteForm } from "../../quote-form";
+import { draftKey } from "../../draft";
 
 export const metadata = { title: "Editar orçamento" };
 
 export default async function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!uuid.safeParse(id).success) notFound();
-  const { db, tenantId } = await requireAuth();
+  const { db, tenantId, user } = await requireAuth();
   const [q, d] = await Promise.all([db.quote.findFirst({ where: { id }, include: { items: { orderBy: { id: "asc" } } } }), quoteFormData(db, tenantId)]);
   if (!q) notFound();
   if (q.status === "CANCELED") redirect(`/orcamentos/${id}`);
@@ -20,9 +21,10 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
       <QuoteForm
         customers={d.customers} settings={d.settings}
         revisesDecided={q.status !== "DRAFT" && q.status !== "SENT"}
+        draftKey={draftKey(tenantId, user.id, q.id)} base={q.updatedAt.toISOString()} seed="" seeded={{}}
         initial={{
           id: q.id, customerId: q.customerId,
-          items: q.items.map((i) => ({ kind: i.kind, description: i.description, quantity: i.quantity.toString(), unitCost: i.unitCost.toString(), unitPrice: i.unitPrice.toString() })),
+          items: q.items.map((i) => ({ kind: i.kind, description: i.description, quantity: i.quantity.toString(), unitCost: i.unitCost.toFixed(2), unitPrice: i.unitPrice.toFixed(2) })),
           discount: q.discount.toString(), extraFee: q.extraFee.toString(), uberMode: q.uberMode, uberCost: q.uberCost.toString(), uberMarkup: q.uberMarkup,
           validUntil: q.validUntil ? q.validUntil.toISOString().slice(0, 10) : "", executionDays: q.executionDays?.toString() ?? "",
           paymentTerms: q.paymentTerms ?? "", warranty: q.warranty ?? "", notes: q.notes ?? "",

@@ -260,7 +260,8 @@ model TransactionPayment {
 
 model PricingSettings {
   tenantId          String   @id @db.Uuid
-  partMarginPct     Decimal  @default(40) @db.Decimal(5, 2)
+  // markup over cost (price = cost * (1 + markup/100)); the column keeps its old name
+  markupPct         Decimal  @default(40) @db.Decimal(5, 2) @map("partMarginPct")
   laborMarginPct    Decimal  @default(50) @db.Decimal(5, 2)
   minMarginPct      Decimal  @default(20) @db.Decimal(5, 2)
   cardFeePct        Decimal  @default(4) @db.Decimal(5, 2)

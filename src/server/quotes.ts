@@ -20,9 +20,9 @@ export type QuoteInput = {
 const EDITABLE: QuoteStatus[] = ["DRAFT", "SENT"];
 
 async function rates(db: TenantDb, tenantId: string) {
-  const s = (await db.pricingSettings.findFirst({ where: { tenantId } })) ?? { partMarginPct: 0, taxPct: 0, cardFeePct: 0 };
-  // marginPct is only used to price a SEPARATE uber line with markup
-  return { marginPct: s.partMarginPct.toString(), taxPct: "0", cardFeePct: "0" }; // imposto e cartão ficaram fora do MVP
+  const s = (await db.pricingSettings.findFirst({ where: { tenantId } })) ?? { markupPct: 0, taxPct: 0, cardFeePct: 0 };
+  // snapshot column; only legacy quotes with uberMarkup read it back (see uberCharge)
+  return { marginPct: s.markupPct.toString(), taxPct: "0", cardFeePct: "0" }; // imposto e cartão ficaram fora do MVP
 }
 
 const itemRows = (items: Line[], tenantId: string, quoteId: string) => items.map((i) => ({ ...i, tenantId, quoteId }));
@@ -88,15 +88,21 @@ export async function cancelQuote(db: TenantDb, id: string) {
   if (was?.status === "APPROVED" || was?.status === "CANCELED") await onQuoteCanceled(db, id);
 }
 
-export async function listQuotes(db: TenantDb, f: { status?: QuoteStatus; q?: string }) {
+/** One page of quotes, newest first. `page` is clamped to the valid range. */
+export async function listQuotes(db: TenantDb, f: { status?: QuoteStatus; q?: string; page?: number; size?: number }) {
   await db.quote.updateMany({ where: { status: "SENT", validUntil: { lt: new Date() } }, data: { status: "EXPIRED" } });
   const q = f.q?.trim();
-  return db.quote.findMany({
-    where: {
-      ...(f.status ? { status: f.status } : {}),
-      ...(q ? { OR: [{ number: { contains: q, mode: "insensitive" } }, { customer: { name: { contains: q, mode: "insensitive" } } }] } : {}),
-    },
-    include: { customer: { select: { name: true } } },
-    orderBy: [{ createdAt: "desc" }], take: 100,
+  const where = {
+    ...(f.status ? { status: f.status } : {}),
+    ...(q ? { OR: [{ number: { contains: q, mode: "insensitive" as const } }, { customer: { name: { contains: q, mode: "insensitive" as const } } }] } : {}),
+  };
+  const size = f.size ?? 20;
+  const total = await db.quote.count({ where });
+  const pages = Math.max(1, Math.ceil(total / size));
+  const page = Math.min(Math.max(1, f.page ?? 1), pages);
+  const rows = await db.quote.findMany({
+    where, include: { customer: { select: { name: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * size, take: size,
   });
+  return { rows, total, page, pages };
 }

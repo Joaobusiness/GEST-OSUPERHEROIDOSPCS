@@ -1,18 +1,19 @@
 import { Avatar } from "@/components/ui";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
-import { Empty, PageHeader, QUOTE_STATUS, Status, dateBR, money } from "@/components/ui";
+import { Empty, PageHeader, Pager, QUOTE_STATUS, Status, dateBR, money } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
 import { listQuotes } from "@/server/quotes";
 import type { QuoteStatus } from "@/generated/prisma/client";
 
 export const metadata = { title: "Orçamentos" };
 
-export default async function QuotesPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
+export default async function QuotesPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; pg?: string }> }) {
   const sp = await searchParams;
   const { db, tenant } = await requireAuth();
   const status = sp.status && sp.status in QUOTE_STATUS ? (sp.status as QuoteStatus) : undefined;
-  const quotes = await listQuotes(db, { status, q: sp.q });
+  const list = await listQuotes(db, { status, q: sp.q, page: Number.parseInt(sp.pg ?? "1", 10) || 1 });
+  const quotes = list.rows;
   const href = (s?: string) => `/orcamentos?${new URLSearchParams({ ...(s ? { status: s } : {}), ...(sp.q ? { q: sp.q } : {}) })}`;
   return (
     <>
@@ -52,6 +53,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
           ))}
         </ul>
       )}
+      <Pager page={list.page} pages={list.pages} href={(n) => `/orcamentos?${new URLSearchParams({ ...(status ? { status } : {}), ...(sp.q ? { q: sp.q } : {}), pg: String(n) })}`} />
     </>
   );
 }
