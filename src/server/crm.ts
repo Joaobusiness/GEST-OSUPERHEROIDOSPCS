@@ -39,6 +39,19 @@ export async function updateCustomer(db: TenantDb, id: string, i: CustomerInput)
   return db.customer.update({ where: { id }, data: { ...customerData(i), address: i.address ? { text: i.address } : (null as never) } as never });
 }
 
+/** Turns the "cliente está devendo" reminder on (amount and agreed date) or off (both cleared). The customer is never deleted. */
+export async function setDebt(db: TenantDb, id: string, d: { owes: false } | { owes: true; amount: string; dueDate: Date }) {
+  await getCustomer(db, id);
+  await db.customer.update({ where: { id }, data: d.owes ? { owes: true, owedAmount: d.amount, owedDueDate: d.dueDate } : { owes: false, owedAmount: null, owedDueDate: null } });
+}
+
+/** Customers marked as owing, earliest agreed date first (the overdue ones lead). */
+export const listDebtors = (db: TenantDb) =>
+  db.customer.findMany({
+    where: { deletedAt: null, owes: true }, orderBy: [{ owedDueDate: "asc" }, { name: "asc" }], take: 50,
+    select: { id: true, name: true, owedAmount: true, owedDueDate: true },
+  });
+
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Active (not soft-deleted) customer of this tenant or CrmError. */

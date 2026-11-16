@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { done, fail, optional, parse, uuid, type ActionState } from "@/lib/action";
+import { done, fail, moneyStr, optional, parse, uuid, ymd, type ActionState } from "@/lib/action";
 import { isValidDocument, onlyDigits, toE164 } from "@/lib/br";
 import { requireAuth } from "@/server/auth";
 import {
-  CrmError, DEVICE_CATEGORIES, createCustomer, deleteCustomer, deleteDevice, saveDevice, updateCustomer,
+  CrmError, DEVICE_CATEGORIES, createCustomer, deleteCustomer, deleteDevice, saveDevice, setDebt, updateCustomer,
 } from "@/server/crm";
 
 const phone = z.string().refine((v) => toE164(v) !== null, "Telefone inválido. Use DDD e número.").transform((v) => toE164(v)!);
@@ -32,6 +32,22 @@ async function guard(fn: () => Promise<ActionState | void>): Promise<ActionState
     if (e instanceof CrmError) return fail(e.message);
     throw e;
   }
+}
+
+const debtSchema = z.object({ id: uuid, owes: checkbox, amount: optional(moneyStr), dueDate: optional(ymd("Data inválida.")) });
+
+export async function saveDebtAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { db } = await requireAuth();
+  const p = parse(debtSchema, fd);
+  if ("state" in p) return p.state;
+  const { id, owes, amount, dueDate } = p.data;
+  if (owes && (!amount || Number(amount) <= 0)) return fail("Informe o valor devido.", { amount: "Informe o valor devido." });
+  if (owes && !dueDate) return fail("Informe a data combinada.", { dueDate: "Informe a data combinada." });
+  return guard(async () => {
+    await setDebt(db, id, owes ? { owes: true, amount: amount!, dueDate: new Date(`${dueDate}T00:00:00Z`) } : { owes: false });
+    revalidatePath("/"); revalidatePath(`/clientes/${id}`);
+    return done(owes ? "Dívida anotada." : "Cliente não está mais devendo.");
+  });
 }
 
 export async function saveCustomerAction(_: ActionState, fd: FormData): Promise<ActionState> {

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ChevronRight, FilePlus2, FileText, UserPlus, Users, Wallet, Wrench } from "lucide-react";
-import { Empty, PageHeader, money } from "@/components/ui";
+import { Empty, PageHeader, dateBR, money } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
 import { loadDashboard, type Alert } from "@/server/dashboard";
+import { listDebtors } from "@/server/crm";
 import { resolvePeriod } from "@/server/finance";
 import { first, PeriodFilter, type SP } from "./financeiro/parts";
 
@@ -14,7 +15,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const { db, tenant } = await requireAuth();
   const sp = await searchParams;
   const period = resolvePeriod({ p: first(sp.p), de: first(sp.de), ate: first(sp.ate) }, tenant.timezone);
-  const d = await loadDashboard(db, period, tenant.timezone);
+  const [d, debtors] = await Promise.all([loadDashboard(db, period, tenant.timezone), listDebtors(db)]);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: tenant.timezone }).format(new Date()); // yyyy-mm-dd in the company time zone
 
   if (d.isEmpty) {
     return (
@@ -92,6 +94,31 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <Kpi label="Ticket médio" sub="Média dos orçamentos aprovados no período" value={d.avgTicket ? money(d.avgTicket) : "Sem dados"} />
         </ul>
       </section>
+
+      {debtors.length > 0 && (
+        <section aria-labelledby="devendo" className="mt-6">
+          <h2 id="devendo" className="mb-2">Clientes devendo</h2>
+          <ul className="card overflow-hidden">
+            {debtors.map((c) => {
+              const late = !!c.owedDueDate && c.owedDueDate.toISOString().slice(0, 10) < today;
+              return (
+                <li key={c.id}>
+                  <Link href={`/clientes/${c.id}`} className="list-row">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{c.name}</span>
+                      <span className={`block text-sm ${late ? "font-semibold text-[var(--bad)]" : "text-[var(--text-2)]"}`}>
+                        {late ? "Atrasado desde" : "Paga em"} {dateBR(c.owedDueDate, "UTC")}
+                      </span>
+                    </span>
+                    <span className={`num shrink-0 font-semibold ${late ? "text-[var(--bad)]" : ""}`}>{money(c.owedAmount)}</span>
+                    <ChevronRight size={18} aria-hidden className="shrink-0 text-[var(--text-3)]" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </>
   );
 }
