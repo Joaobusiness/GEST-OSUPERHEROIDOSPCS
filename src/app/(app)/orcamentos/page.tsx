@@ -1,6 +1,9 @@
 import { Avatar } from "@/components/ui";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
+import { ActionForm } from "@/components/form";
+import { deleteAction } from "@/server/quotes-actions";
+import { ConfirmButton } from "../clientes/confirm-button";
 import { Empty, PageHeader, Pager, QUOTE_STATUS, Status, dateBR, money } from "@/components/ui";
 import { requireAuth } from "@/server/auth";
 import { listQuotes } from "@/server/quotes";
@@ -36,8 +39,8 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
       ) : (
         <ul className="card stagger overflow-hidden">
           {quotes.map((q) => (
-            <li key={q.id}>
-              <Link href={`/orcamentos/${q.id}`} className="list-row">
+            <li key={q.id} className="flex items-center">
+              <Link href={`/orcamentos/${q.id}`} className="list-row min-w-0 flex-1">
                 <Avatar name={q.customer.name} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-bold">{q.customer.name}</p>
@@ -49,6 +52,12 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                   <span className="num text-sm font-semibold">{money(q.totalAmount)}</span>
                 </div>
               </Link>
+              <ActionForm action={deleteAction} className="shrink-0 pr-2">
+                <input type="hidden" name="id" value={q.id} />
+                <ConfirmButton message={`Excluir o orçamento ${q.number} de ${q.customer.name}? Isso não pode ser desfeito.`} className="grid size-11 place-items-center rounded-full text-[var(--text-3)] hover:bg-[var(--bad-soft)] hover:text-[var(--bad)]">
+                  <Trash2 size={18} aria-hidden /><span className="sr-only">Excluir orçamento {q.number}</span>
+                </ConfirmButton>
+              </ActionForm>
             </li>
           ))}
         </ul>
