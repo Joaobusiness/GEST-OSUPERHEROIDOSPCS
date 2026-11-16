@@ -88,6 +88,16 @@ export async function cancelQuote(db: TenantDb, id: string) {
   if (was?.status === "APPROVED" || was?.status === "CANCELED") await onQuoteCanceled(db, id);
 }
 
+/** Deletes one quote (items go with it). Money already received can't vanish: then the user must cancel instead. */
+export async function deleteQuote(db: TenantDb, id: string) {
+  const q = await db.quote.findFirst({ where: { id }, select: { id: true } });
+  if (!q) throw new DomainError("Orçamento não encontrado.");
+  const paid = await db.transactionPayment.count({ where: { transaction: { quoteId: id, status: { not: "CANCELED" } } } });
+  if (paid > 0) throw new DomainError("Este orçamento já tem pagamento registrado. Cancele o orçamento em vez de excluir.");
+  await onQuoteCanceled(db, id);
+  await db.quote.deleteMany({ where: { id } });
+}
+
 /** One page of quotes, newest first. `page` is clamped to the valid range. */
 export async function listQuotes(db: TenantDb, f: { status?: QuoteStatus; q?: string; page?: number; size?: number }) {
   await db.quote.updateMany({ where: { status: "SENT", validUntil: { lt: new Date() } }, data: { status: "EXPIRED" } });

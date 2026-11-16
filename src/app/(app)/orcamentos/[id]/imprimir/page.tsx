@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { dateBR, money } from "@/components/ui";
 import { uuid } from "@/lib/action";
@@ -6,18 +8,35 @@ import { requireAuth } from "@/server/auth";
 import { dec, uberCharge } from "@/server/line-items";
 import { PrintButton } from "../../share-buttons";
 
-export const metadata = { title: "Orçamento" };
+const load = cache(async (id: string) => {
+  if (!uuid.safeParse(id).success) notFound();
+  const { db, tenant } = await requireAuth();
+  const q = await db.quote.findFirst({ where: { id }, include: { customer: true, items: { orderBy: { id: "asc" } } } });
+  if (!q) notFound();
+  return { q, tenant };
+});
 
-// The app shell is hidden on paper; A4 margins come from @page.
+// O navegador usa o título da página como nome do arquivo ao salvar o PDF.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { q } = await load((await params).id);
+  return { title: { absolute: `ORÇAMENTO - ${q.customer.name}` } };
+}
+
+// A margem do papel vem de spacers repetidos no topo e no pé da tabela (thead/tfoot) e de padding lateral:
+// com @page margin 0 o navegador deixa de imprimir a URL, a data e o título nas bordas da folha.
+// html menor escala tudo em rem: um orçamento comum cabe em uma folha A4; muitos itens quebram em mais folhas.
 const PRINT_CSS = `
-@page { size: A4; margin: 14mm; }
+.pg-gap { height: 0; }
+@page { size: A4; margin: 0; }
 @media print {
+  html { font-size: 13px; }
   aside, nav, header { display: none !important; }
   .paper header { display: grid !important; }
   body { background: #fff !important; }
   main { max-width: none !important; padding: 0 !important; }
   .paper-wrap { background: none !important; padding: 0 !important; border-radius: 0 !important; }
-  .paper { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; }
+  .paper { box-shadow: none !important; border-radius: 0 !important; padding: 0 12mm !important; max-width: none !important; gap: 1rem !important; }
+  .pg-gap { height: 12mm; }
   * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }`;
 
@@ -33,8 +52,8 @@ function ItemsTable({ title, rows }: { title: string; rows: Row[] }) {
   if (!rows.length) return null;
   const sub = rows.reduce((a, i) => a.plus(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2)), dec(0));
   return (
-    <section className="break-inside-avoid">
-      <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">{title}</h2>
+    <section>
+      <h2 className="mb-2 break-after-avoid text-xs font-bold uppercase tracking-[0.12em] text-[var(--accent)]">{title}</h2>
       <table className="w-full table-fixed text-left text-[0.9375rem]">
         <thead>
           <tr className="border-b-2 border-[var(--accent)] text-xs uppercase tracking-wide text-[var(--text-2)]">
@@ -47,25 +66,21 @@ function ItemsTable({ title, rows }: { title: string; rows: Row[] }) {
         <tbody>
           {rows.map((i) => (
             <tr key={i.id} className="break-inside-avoid border-b border-[var(--line)] align-top">
-              <td className="break-words py-2.5 pr-2">{i.description}</td>
-              <td className="num px-1 py-2.5 text-right">{i.quantity.toString()}</td>
-              <td className="num px-1 py-2.5 text-right">{money(i.unitPrice as never)}</td>
-              <td className="num py-2.5 pl-1 text-right font-semibold">{money(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2))}</td>
+              <td className="break-words py-1.5 pr-2">{i.description}</td>
+              <td className="num px-1 py-1.5 text-right">{i.quantity.toString()}</td>
+              <td className="num px-1 py-1.5 text-right">{money(i.unitPrice as never)}</td>
+              <td className="num py-1.5 pl-1 text-right font-semibold">{money(dec(i.quantity.toString()).times(i.unitPrice.toString()).toDecimalPlaces(2))}</td>
             </tr>
           ))}
+          <tr className="break-inside-avoid"><td colSpan={3} className="pt-2 text-right text-sm text-[var(--text-2)]">Subtotal</td><td className="num pt-2 text-right font-semibold">{money(sub)}</td></tr>
         </tbody>
-        <tfoot><tr><td colSpan={3} className="pt-2 text-right text-sm text-[var(--text-2)]">Subtotal</td><td className="num pt-2 text-right font-semibold">{money(sub)}</td></tr></tfoot>
       </table>
     </section>
   );
 }
 
 export default async function PrintQuotePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  if (!uuid.safeParse(id).success) notFound();
-  const { db, tenant } = await requireAuth();
-  const q = await db.quote.findFirst({ where: { id }, include: { customer: true, items: { orderBy: { id: "asc" } } } });
-  if (!q) notFound();
+  const { q, tenant } = await load((await params).id);
   const tz = tenant.timezone;
   const uber = uberCharge(q, q);
   const services = q.items.filter((i) => i.kind !== "PART");
@@ -88,12 +103,13 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
         <PrintButton />
       </div>
       <div className="paper-wrap rounded-[var(--r-lg)] bg-[var(--line)] p-2 sm:p-6">
-        <article className="paper mx-auto grid max-w-[794px] gap-7 bg-white p-5 text-[var(--ink)] shadow-[var(--shadow-2)] sm:p-10">
-          <header className="grid gap-4 border-b-4 border-[var(--accent)] pb-5 sm:grid-cols-[1fr_auto] sm:items-start">
+        <table className="mx-auto w-full max-w-[794px]"><thead><tr><td className="p-0"><div className="pg-gap" /></td></tr></thead><tbody><tr><td className="p-0 align-top">
+        <article className="paper mx-auto grid gap-5 bg-white p-5 text-[var(--ink)] shadow-[var(--shadow-2)] sm:p-10">
+          <header className="grid gap-4 border-b-4 border-[var(--accent)] pb-4 sm:grid-cols-[1fr_auto] sm:items-start">
             <div className="grid min-w-0 gap-3">
               {tenant.logoUrl
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={tenant.logoUrl} alt={tenant.name} className="max-h-20 w-auto max-w-[240px] object-contain object-left" />
+                ? <img src={tenant.logoUrl} alt={tenant.name} className="max-h-16 w-auto max-w-[220px] object-contain object-left" />
                 : <p className="break-words text-3xl font-extrabold leading-tight tracking-tight">{tenant.name}</p>}
               <div className="grid gap-0.5 text-sm text-[var(--text-2)]">
                 {tenant.logoUrl && <p className="font-semibold text-[var(--ink)]">{tenant.name}</p>}
@@ -146,6 +162,7 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
             <a href="https://gestaosuperheroi.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent)] underline">https://gestaosuperheroi.vercel.app/</a>
           </footer>
         </article>
+        </td></tr></tbody><tfoot><tr><td className="p-0"><div className="pg-gap" /></td></tr></tfoot></table>
       </div>
     </>
   );

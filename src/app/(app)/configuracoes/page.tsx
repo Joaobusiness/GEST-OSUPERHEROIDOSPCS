@@ -7,7 +7,7 @@ import { TIMEZONES, listTeam } from "@/server/settings";
 import { addMemberAction, removeMemberAction, updateBusinessAction, updatePricingSettingsAction } from "@/server/settings-actions";
 import { ConfirmButton } from "@/app/(app)/admin/confirm-button";
 import { formatPhone } from "@/lib/br";
-import { LogoCard } from "./logo-card";
+import { ProfileCard } from "./logo-card";
 
 export const metadata = { title: "Configurações" };
 
@@ -26,8 +26,10 @@ export default async function Page() {
   return (
     <>
       <PageHeader title="Configurações" sub={isAdmin ? "Dados da empresa, preço e equipe." : "Só quem é administrador pode mudar. Você pode ver tudo."} />
-      <div className="grid gap-6">
-        <section className="card card-pad grid gap-4">
+      <div className="ig grid gap-8">
+        <ProfileCard current={tenant.logoUrl ?? ""} name={tenant.name} email={tenant.email} isAdmin={isAdmin} />
+
+        <section className="grid gap-4">
           <h2>Empresa</h2>
           <ActionForm action={updateBusinessAction}>
             <fieldset disabled={!isAdmin} className="grid gap-4 border-0 p-0">
@@ -55,14 +57,12 @@ export default async function Page() {
                   {TIMEZONES.map((z) => <option key={z} value={z}>{z.replace("America/", "").replace("_", " ")}</option>)}
                 </Select>
               </Field>
-              {isAdmin && <SubmitButton>Salvar empresa</SubmitButton>}
+              {isAdmin && <SubmitButton className="btn btn-primary w-full">Salvar empresa</SubmitButton>}
             </fieldset>
           </ActionForm>
         </section>
 
-        <LogoCard current={tenant.logoUrl ?? ""} isAdmin={isAdmin} />
-
-        <section className="card card-pad grid gap-4">
+        <section className="grid gap-4">
           <div>
             <h2>Preço e clientes</h2>
             <p className="hint mt-1">Valem para novos orçamentos e contas. Orçamentos já aprovados não mudam.</p>
@@ -77,7 +77,7 @@ export default async function Page() {
                 <div className="grid gap-3 min-[460px]:grid-cols-2">
                   <Field name="inactiveDays" label="Cliente sumido depois de (dias)"><Input name="inactiveDays" inputMode="numeric" defaultValue={st.inactiveDays} /></Field>
                 </div>
-                {isAdmin && <SubmitButton>Salvar</SubmitButton>}
+                {isAdmin && <SubmitButton className="btn btn-primary w-full">Salvar</SubmitButton>}
               </fieldset>
             </ActionForm>
           )}
@@ -107,13 +107,13 @@ export default async function Page() {
                 <Field name="name" label="Nome"><Input name="name" required /></Field>
                 <Field name="email" label="E-mail"><Input name="email" type="email" autoComplete="off" required /></Field>
                 <Field name="password" label="Senha temporária" hint="Mínimo de 8 caracteres. Combine com a pessoa a troca da senha."><Input name="password" type="password" autoComplete="new-password" required /></Field>
-                <SubmitButton pendingText="Adicionando…">Adicionar membro</SubmitButton>
+                <SubmitButton pendingText="Adicionando…" className="btn btn-primary w-full">Adicionar membro</SubmitButton>
               </ActionForm>
             </div>
           )}
         </section>
 
-        <section className="card card-pad grid gap-2">
+        <section className="grid gap-2">
           <h2>Privacidade (LGPD)</h2>
           <p className="hint">Você guarda dados dos seus clientes. Só mande promoções para quem aceitou receber.</p>
           <div className="flex flex-wrap gap-x-6">

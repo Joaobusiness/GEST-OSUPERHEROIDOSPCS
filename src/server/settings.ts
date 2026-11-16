@@ -3,6 +3,7 @@ import type { TenantDb } from "@/lib/db";
 import { fail, done, markupStr, moneyStr, optional, pctStr, type ActionState } from "@/lib/action";
 import { isValidDocument, onlyDigits, toE164 } from "@/lib/br";
 import { hashPassword } from "@/server/auth";
+import { cloudinaryEnabled, deleteLogo, uploadLogo } from "@/server/cloudinary";
 
 export type Ctx = { db: TenantDb; tenantId: string; role: "ADMIN" | "MEMBER"; userId: string };
 
@@ -106,8 +107,17 @@ export async function removeMember(c: Ctx, userId: string) {
 const LOGO_PREFIX = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 export const logoSchema = z.object({ logo: z.string().max(400_000, "Imagem grande demais.").refine((s) => s === "" || LOGO_PREFIX.test(s), "Use uma imagem PNG, JPG ou WebP.") });
 
-/** Empty string removes the logo. */
+/** Empty string removes the logo. With Cloudinary configured the image is stored there and only its URL is kept; without it the data URL stays in the database (local dev). */
 export async function updateLogo(c: Ctx, logo: string) {
   assertAdmin(c);
-  await c.db.tenant.update({ where: { id: c.tenantId }, data: { logoUrl: logo || null } });
+  let url: string | null = logo || null;
+  try {
+    if (logo && cloudinaryEnabled()) url = await uploadLogo(c.tenantId, logo);
+    if (!logo && cloudinaryEnabled()) await deleteLogo(c.tenantId).catch(() => {}); // best effort: the DB is the source of truth
+  } catch (e) {
+    console.error("[logo] upload failed", e instanceof Error ? e.message : e);
+    throw new UserError("Não consegui enviar a imagem agora. Tente de novo.");
+  }
+  await c.db.tenant.update({ where: { id: c.tenantId }, data: { logoUrl: url } });
+  return url;
 }
