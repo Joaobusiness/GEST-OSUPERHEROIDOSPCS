@@ -20,7 +20,7 @@ SaaS B2B multi-tenant, em português brasileiro (BRL, America/Sao_Paulo), para g
 
 ## Positioning
 
-Não é ERP. É uma plataforma enxuta feita para a rotina de técnico de informática: a precificação inteligente (margem sobre preço de venda, taxas no denominador, três modalidades de Uber, precisão decimal) e o remarketing por WhatsApp ligados à mesma base de clientes, ordens de serviço e financeiro.
+Não é ERP. É uma plataforma enxuta feita para a rotina de técnico de informática: a precificação inteligente (markup sobre o custo: preço = custo x (1 + markup/100); Uber Sim/Não somado ao total; precisão decimal) e o remarketing por WhatsApp ligados à mesma base de clientes, ordens de serviço e financeiro.
 
 ## Operating Context
 

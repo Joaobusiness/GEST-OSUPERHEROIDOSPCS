@@ -1,17 +1,18 @@
 import { Avatar } from "@/components/ui";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
-import { Empty, PageHeader } from "@/components/ui";
+import { Empty, PageHeader, Pager } from "@/components/ui";
 import { formatPhone } from "@/lib/br";
 import { requireAuth } from "@/server/auth";
 import { listCustomers } from "@/server/crm";
 
 export const metadata = { title: "Clientes" };
 
-export default async function ClientesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams;
+export default async function ClientesPage({ searchParams }: { searchParams: Promise<{ q?: string; pg?: string }> }) {
+  const { q, pg } = await searchParams;
   const { db } = await requireAuth();
-  const customers = await listCustomers(db, q);
+  const list = await listCustomers(db, q, Number.parseInt(pg ?? "1", 10) || 1);
+  const customers = list.rows;
   return (
     <>
       <PageHeader title="Clientes" action={<Link href="/clientes/novo" className="btn btn-primary btn-sm"><Plus size={18} aria-hidden /> Novo cliente</Link>} />
@@ -40,6 +41,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
           ))}
         </div>
       )}
+      <Pager page={list.page} pages={list.pages} href={(n) => `/clientes?${new URLSearchParams({ ...(q ? { q } : {}), pg: String(n) })}`} />
     </>
   );
 }

@@ -10,14 +10,16 @@ import { dec, uberCharge } from "@/server/line-items";
 import { approveAction, cancelAction, rejectAction } from "@/server/quotes-actions";
 import { ConfirmButton } from "../../clientes/confirm-button";
 import { WhatsAppButton } from "../share-buttons";
+import { draftKey } from "../draft";
+import { DraftCleared } from "../draft-cleared";
 
 const KIND = { PART: "Peça", LABOR: "Mão de obra", OTHER: "Outro" };
 
-export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ rev?: string }> }) {
+export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ rev?: string; salvo?: string }> }) {
   const { id } = await params;
-  const { rev } = await searchParams;
+  const { rev, salvo } = await searchParams;
   if (!uuid.safeParse(id).success) notFound();
-  const { db, tenant } = await requireAuth();
+  const { db, tenant, tenantId, user } = await requireAuth();
   const q = await db.quote.findFirst({ where: { id }, include: { customer: true, items: { orderBy: { id: "asc" } } } });
   if (!q) notFound();
   const revisions = await db.quote.findMany({ where: { number: q.number }, orderBy: { revision: "desc" }, select: { id: true, revision: true, status: true } });
@@ -41,6 +43,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   return (
     <>
       <PageHeader title={q.number} sub={`${q.customer.name}, revisão ${q.revision}`} action={<Status map={QUOTE_STATUS} value={q.status} />} />
+      {salvo && (salvo === "novo" || uuid.safeParse(salvo).success) && <DraftCleared draftKey={draftKey(tenantId, user.id, salvo === "novo" ? undefined : salvo)} href={`/orcamentos/${q.id}${rev ? "?rev=1" : ""}`} />}
       {rev && <p role="status" className="chip chip-ok !mb-4 !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">Nova revisão criada. A anterior foi preservada.</p>}
       <div className="grid gap-5">
         <section className="card card-pad grid gap-3" aria-label="Itens">

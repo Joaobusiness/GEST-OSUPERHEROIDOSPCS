@@ -14,8 +14,8 @@ export interface PricingInput {
   fixedFees?: N; // fixed fees are added to cost before the formula
   uberCost?: N;
   uberMode?: UberMode;
-  uberMarkup?: boolean; // SEPARATE only: false = pure pass-through
-  marginPct: N; // margin on selling price, 0..100
+  uberMarkup?: boolean; // legacy quotes only (SEPARATE): profit on the uber line, priced by the old margin formula
+  markupPct: N; // markup over cost: price = cost * (1 + markup/100)
   taxPct?: N; // % of selling price
   cardFeePct?: N; // % of selling price
   manualPrice?: N | null; // overrides the customer total; margin is recomputed
@@ -39,23 +39,31 @@ export class PricingError extends Error {}
 const d = (v: N | null | undefined) => new Decimal(v ?? 0);
 const money = (v: Decimal) => v.toDecimalPlaces(2).toFixed(2);
 
-/** price = cost / (1 - (margin + fees)/100). Throws when the denominator is <= 0. */
-export function priceFromCost(cost: Decimal, marginPct: Decimal, feesPct: Decimal): Decimal {
+/** Markup over cost: price = cost * (1 + markup/100), grossed up by % fees on the selling price (0 in the MVP). */
+export function priceFromMarkup(cost: Decimal, markupPct: Decimal, feesPct: Decimal = new Decimal(0)): Decimal {
+  const denom = new Decimal(1).minus(feesPct.div(100));
+  if (denom.lte(0)) throw new PricingError("As taxas devem ser menores que 100%.");
+  return cost.times(markupPct.div(100).plus(1)).div(denom);
+}
+
+/**
+ * LEGACY, margin on selling price: price = cost / (1 - (margin + fees)/100).
+ * Only reprices the uber line of quotes saved before the markup change (uberMarkup = true), so their totals never move.
+ */
+export function legacyPriceFromMargin(cost: Decimal, marginPct: Decimal, feesPct: Decimal): Decimal {
   const denom = new Decimal(1).minus(marginPct.plus(feesPct).div(100));
-  if (denom.lte(0)) {
-    throw new PricingError("Margem + taxas devem ser menores que 100%.");
-  }
+  if (denom.lte(0)) throw new PricingError("Margem + taxas devem ser menores que 100%.");
   return cost.div(denom);
 }
 
 export function calculatePrice(input: PricingInput, minMarginPct?: N): PricingResult {
-  const margin = d(input.marginPct);
+  const markup = d(input.markupPct);
   const tax = d(input.taxPct);
   const card = d(input.cardFeePct);
   const fees = tax.plus(card);
   const uber = d(input.uberCost);
   const mode = input.uberMode ?? "INCLUDED";
-  for (const [k, v] of Object.entries({ margin, tax, card, uber })) {
+  for (const [k, v] of Object.entries({ markup, tax, card, uber })) {
     if (v.isNeg()) throw new PricingError(`Valor negativo não permitido: ${k}.`);
   }
 
@@ -65,12 +73,12 @@ export function calculatePrice(input: PricingInput, minMarginPct?: N): PricingRe
   const base = d(input.partCost).plus(d(input.otherCosts)).plus(d(input.fixedFees));
   const markedUpCost = base.plus(laborFixed ? 0 : labor).plus(mode === "INCLUDED" ? uber : 0);
 
-  let suggested = priceFromCost(markedUpCost, margin, fees);
+  let suggested = priceFromMarkup(markedUpCost, markup, fees);
   if (laborFixed) suggested = suggested.plus(d(input.laborPrice));
 
   let uberCharge = new Decimal(0);
   if (mode === "SEPARATE" && uber.gt(0)) {
-    uberCharge = input.uberMarkup ? priceFromCost(uber, margin, fees) : uber.div(new Decimal(1).minus(fees.div(100)));
+    uberCharge = input.uberMarkup ? legacyPriceFromMargin(uber, markup, fees) : uber.div(new Decimal(1).minus(fees.div(100)));
     // pass-through still recovers the % fees charged on it, otherwise fees would eat the repass
   }
 

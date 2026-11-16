@@ -34,6 +34,7 @@
   --warn-soft: #fdf1d6;
   --bad: #b42318;
   --bad-soft: #fde8e6;
+  --bad-on-ink: #ff9b93; /* 9:1 on --ink; --bad is only 2.6:1 there */
 
   --r-sm: 10px;
   --r-md: 14px;
@@ -137,7 +138,7 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   @media (hover: hover) and (pointer: fine) { .btn-primary:hover { background: var(--accent-press); } .btn-quiet:hover { background: #f7f9fc; } }
   .btn-quiet { background: var(--card); color: var(--text); border-color: var(--line); box-shadow: var(--shadow-1); }
   .btn-danger { background: var(--bad-soft); color: var(--bad); }
-  .btn-sm { min-height: 40px; padding: 0 1rem; font-size: .9375rem; }
+  .btn-sm { min-height: 44px; /* smallest comfortable touch target */ padding: 0 1rem; font-size: .9375rem; }
 
   .field { display: grid; gap: .375rem; }
   .label { font-size: .875rem; font-weight: 600; color: var(--text); }
@@ -153,6 +154,7 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .input[aria-invalid="true"] { border-color: var(--bad); }
   .input::placeholder { color: var(--text-3); }
+  .input:disabled { opacity: .5; background: var(--bg); cursor: not-allowed; }
 
   .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .1875rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: var(--bg); color: var(--text-2); }
   .chip-ok { background: var(--ok-soft); color: var(--ok); }
@@ -190,7 +192,8 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   .tile-accent { background: var(--accent-soft); color: var(--accent-press); }
   .seg { display: inline-flex; gap: .25rem; padding: .25rem; background: var(--card); border-radius: 999px; box-shadow: var(--shadow-1); }
   .seg > * { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 1rem; border-radius: 999px; font-size: .9375rem; font-weight: 600; color: var(--text-2); transition: background-color var(--duration-quick) var(--ease-smooth-out), color var(--duration-quick) var(--ease-smooth-out); }
-  .seg > [aria-current="true"] { background: var(--ink); color: var(--on-ink); }
+  .seg > [aria-current="true"], .seg > label:has(:checked) { background: var(--ink); color: var(--on-ink); }
+  .seg > label:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   .skeleton { background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-md); }

@@ -49,16 +49,21 @@ export async function getCustomer(db: TenantDb, id: string) {
   return c;
 }
 
-export async function listCustomers(db: TenantDb, q?: string) {
+/** One page of customers (name order). `page` is clamped to the valid range. */
+export async function listCustomers(db: TenantDb, q?: string, page = 1, size = 20) {
   const term = q?.trim();
   const digits = term ? onlyDigits(term) : "";
   const or: object[] = term ? [{ name: { contains: term, mode: "insensitive" } }] : [];
   if (digits.length >= 3) or.push({ phone: { contains: digits } }, { document: { contains: digits } });
+  const where = { deletedAt: null, ...(or.length ? { OR: or } : {}) };
+  const total = await db.customer.count({ where });
+  const pages = Math.max(1, Math.ceil(total / size));
+  page = Math.min(Math.max(1, page), pages);
   const [rows, days] = await Promise.all([
     db.customer.findMany({
-      where: { deletedAt: null, ...(or.length ? { OR: or } : {}) },
-      orderBy: { name: "asc" },
-      take: 200, // shortcut: no pagination, add cursor paging past ~200 matches
+      where,
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      skip: (page - 1) * size, take: size,
       include: {
         quotes: { where: { status: { in: ["SENT", "APPROVED"] } }, orderBy: { createdAt: "desc" }, select: { status: true, decidedAt: true, createdAt: true } },
       },
@@ -66,11 +71,11 @@ export async function listCustomers(db: TenantDb, q?: string) {
     inactiveDays(db),
   ]);
   const now = Date.now();
-  return rows.map((c) => {
+  return { total, page, pages, rows: rows.map((c) => {
     const done = c.quotes.find((x) => x.status === "APPROVED");
     const ref = done?.decidedAt ?? done?.createdAt ?? c.createdAt;
     return { ...c, inactive: now - ref.getTime() >= days * DAY, pendingQuote: c.quotes.some((x) => x.status === "SENT") };
-  });
+  }) };
 }
 
 /** Soft delete when there is history, hard delete otherwise. Returns which one happened. */

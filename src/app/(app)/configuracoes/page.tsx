@@ -70,18 +70,11 @@ export default async function Page() {
           {st && (
             <ActionForm action={updatePricingSettingsAction}>
               <fieldset disabled={!isAdmin} className="grid gap-4 border-0 p-0">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Field name="partMarginPct" label="Margem de lucro (%)" hint="Usada como ponto de partida na Precificação."><Input name="partMarginPct" inputMode="decimal" defaultValue={v(st.partMarginPct)} /></Field>
-                                                                                                            <Field name="defaultUberCost" label="Custo médio do Uber (R$)"><Input name="defaultUberCost" inputMode="decimal" defaultValue={v(st.defaultUberCost)} /></Field>
-                  <Field name="defaultUberMode" label="Como cobrar o Uber">
-                    <Select name="defaultUberMode" defaultValue={st.defaultUberMode}>
-                      <option value="INCLUDED">Dentro do preço</option>
-                      <option value="SEPARATE">Linha separada</option>
-                      <option value="ABSORBED">Eu pago, não cobro</option>
-                    </Select>
-                  </Field>
+                <div className="grid gap-3 min-[460px]:grid-cols-2">
+                  <Field name="markupPct" label="Margem de lucro (%)" hint="Calculada sobre o custo (markup). Com 60%, um custo de R$ 218,00 vira R$ 348,80."><Input name="markupPct" inputMode="decimal" defaultValue={v(st.markupPct)} /></Field>
+                  <Field name="defaultUberCost" label="Custo médio do Uber (R$)" hint="Preenche o valor quando você marca Uber: Sim."><Input name="defaultUberCost" inputMode="decimal" defaultValue={v(st.defaultUberCost)} /></Field>
                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 min-[460px]:grid-cols-2">
                   <Field name="inactiveDays" label="Cliente sumido depois de (dias)"><Input name="inactiveDays" inputMode="numeric" defaultValue={st.inactiveDays} /></Field>
                 </div>
                 {isAdmin && <SubmitButton>Salvar</SubmitButton>}

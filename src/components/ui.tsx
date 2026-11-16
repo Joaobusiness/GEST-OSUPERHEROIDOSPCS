@@ -29,6 +29,18 @@ export function PageHeader({ title, sub, action }: { title: string; sub?: string
   );
 }
 
+/** Paginação única do app (Financeiro, Clientes, Orçamentos): Anterior · 2 de 7 · Próxima. Some com uma página só. */
+export function Pager({ page, pages, href }: { page: number; pages: number; href: (page: number) => string }) {
+  if (pages <= 1) return null;
+  return (
+    <nav aria-label="Páginas" className="mt-3 flex items-center justify-between gap-3">
+      {page > 1 ? <Link href={href(page - 1)} className="btn btn-quiet btn-sm">Anterior</Link> : <span />}
+      <span className="num text-sm text-[var(--text-2)]">{page} de {pages}</span>
+      {page < pages ? <Link href={href(page + 1)} className="btn btn-quiet btn-sm">Próxima</Link> : <span />}
+    </nav>
+  );
+}
+
 /** Iniciais num quadrado arredondado. A cor vem do nome: o mesmo cliente tem sempre a mesma. */
 export function Avatar({ name }: { name: string }) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
