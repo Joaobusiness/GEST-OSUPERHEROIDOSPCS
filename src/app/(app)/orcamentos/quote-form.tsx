@@ -180,7 +180,7 @@ function Form({ customers, settings, initial, revisesDecided, draftKey, base, se
           <dl className="grid gap-1.5 border-t border-[var(--ink-line)] pt-3 text-sm text-[var(--on-ink-2)]">
             {t.uberCharge.gt(0) && <div className="flex justify-between gap-3"><dt>Deslocamento (Uber)</dt><dd className="num">{money(t.uberCharge)}</dd></div>}
             <div className="flex justify-between gap-3"><dt>Seu custo</dt><dd className="num">{money(t.totalCost)}</dd></div>
-            <div className="flex justify-between gap-3"><dt>Lucro bruto (só você vê)</dt><dd className={`num font-semibold ${profit.isNeg() ? "text-[var(--bad-on-ink)]" : "text-[var(--on-ink)]"}`}>{money(profit)}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Lucro total (só eu)</dt><dd className={`num font-semibold ${profit.isNeg() ? "text-[var(--bad-on-ink)]" : "text-[var(--on-ink)]"}`}>{money(profit)}</dd></div>
           </dl>
         </div>
         <SubmitButton className="btn btn-primary w-full"><FileText size={18} aria-hidden /> Gerar orçamento</SubmitButton>
