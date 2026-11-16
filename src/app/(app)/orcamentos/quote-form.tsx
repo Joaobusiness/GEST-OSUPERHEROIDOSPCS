@@ -36,7 +36,7 @@ function toData(i: QuoteFormProps["initial"]): QuoteDraftData {
   const products = i.items.filter(isProduct);
   return {
     customerId: i.customerId, services: services.length || products.length ? services : [blankLine("LABOR")], products,
-    discount: i.discount, uberOn: dec(i.uberCost).gt(0), uberCost: i.uberCost,
+    discount: i.discount, extraFee: i.extraFee, uberOn: dec(i.uberCost).gt(0), uberCost: i.uberCost,
     notes: i.notes, validUntil: i.validUntil, executionDays: i.executionDays, paymentTerms: i.paymentTerms, warranty: i.warranty,
   };
 }
@@ -65,10 +65,11 @@ export function QuoteForm(p: QuoteFormProps) {
 }
 
 function Form({ customers, settings, initial, revisesDecided, draftKey, base, seed, draft }: QuoteFormProps & { draft: ReturnType<typeof restoreDraft> }) {
-  const [f, setF] = useState<QuoteDraftData>(() => draft?.data ?? toData(initial));
+  const [f, setF] = useState<QuoteDraftData>(() => (draft ? { ...toData(initial), ...draft.data } : toData(initial)));
   const [untouched, setUntouched] = useState(f); // the state that is not worth saving: what the server sent, or the draft as restored
   const [restored, setRestored] = useState(!!draft);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [editTotal, setEditTotal] = useState<string | null>(null); // text typed in "Editar valor"; null = closed
   const uberInput = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<QuoteDraftData>) => setF((p) => ({ ...p, ...patch }));
 
@@ -96,8 +97,15 @@ function Form({ customers, settings, initial, revisesDecided, draftKey, base, se
 
   const items = [...f.services, ...f.products];
   const rates = { marginPct: settings.markupPct, taxPct: settings.taxPct, cardFeePct: settings.cardFeePct };
-  const t = quoteTotals(items, { uberMode, uberCost, uberMarkup }, rates, f.discount, initial.extraFee);
+  const t = quoteTotals(items, { uberMode, uberCost, uberMarkup }, rates, f.discount, f.extraFee);
   const profit = t.totalAmount.minus(t.totalCost);
+  // "Editar valor": the typed final price becomes a discount (below the calculated total) or an extra fee (above it), so the saved quote and the profit stay consistent.
+  const setFinal = (typed: string) => {
+    setEditTotal(typed);
+    if (typed.trim() === "") return;
+    const gross = t.itemsTotal.plus(t.uberCharge), want = dec(typed);
+    set(want.gte(gross) ? { discount: "0", extraFee: want.minus(gross).toFixed(2) } : { discount: gross.minus(want).toFixed(2), extraFee: "0" });
+  };
   const text = (k: "notes" | "validUntil" | "executionDays" | "paymentTerms" | "warranty" | "discount" | "customerId") => ({
     name: k, value: f[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => set({ [k]: e.target.value }),
@@ -108,7 +116,7 @@ function Form({ customers, settings, initial, revisesDecided, draftKey, base, se
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       {/* untouched blank lines are not sent: a quote with only products must not fail on the empty service row */}
       <input type="hidden" name="items" value={JSON.stringify(items.filter(filled))} />
-      <input type="hidden" name="extraFee" value={initial.extraFee} />
+      <input type="hidden" name="extraFee" value={f.extraFee} />
       <input type="hidden" name="uberMode" value={uberMode} />
       <input type="hidden" name="uberCost" value={uberCost} />
       {uberMarkup && <input type="hidden" name="uberMarkup" value="on" />}
@@ -180,9 +188,19 @@ function Form({ customers, settings, initial, revisesDecided, draftKey, base, se
           <dl className="grid gap-1.5 border-t border-[var(--ink-line)] pt-3 text-sm text-[var(--on-ink-2)]">
             {t.uberCharge.gt(0) && <div className="flex justify-between gap-3"><dt>Deslocamento (Uber)</dt><dd className="num">{money(t.uberCharge)}</dd></div>}
             <div className="flex justify-between gap-3"><dt>Seu custo</dt><dd className="num">{money(t.totalCost)}</dd></div>
-            <div className="flex justify-between gap-3"><dt>Lucro bruto (só você vê)</dt><dd className={`num font-semibold ${profit.isNeg() ? "text-[var(--bad-on-ink)]" : "text-[var(--on-ink)]"}`}>{money(profit)}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Lucro total (só eu)</dt><dd className={`num font-semibold ${profit.isNeg() ? "text-[var(--bad-on-ink)]" : "text-[var(--on-ink)]"}`}>{money(profit)}</dd></div>
           </dl>
         </div>
+        {editTotal === null ? (
+          <button type="button" className="min-h-11 justify-self-start text-sm font-semibold text-[var(--on-ink)] underline underline-offset-2" onClick={() => setEditTotal(t.totalAmount.toFixed(2).replace(".", ","))}>Editar valor</button>
+        ) : (
+          <div className="flex items-end gap-2">
+            <label className="field min-w-0 flex-1"><span className="text-sm text-[var(--on-ink-2)]">Valor final (R$)</span>
+              <input className="input" inputMode="decimal" autoComplete="off" autoFocus value={editTotal} onFocus={(e) => e.currentTarget.select()} onChange={(e) => setFinal(e.target.value)} />
+            </label>
+            <button type="button" className="btn btn-quiet btn-sm shrink-0" onClick={() => setEditTotal(null)}>Pronto</button>
+          </div>
+        )}
         <SubmitButton className="btn btn-primary w-full"><FileText size={18} aria-hidden /> Gerar orçamento</SubmitButton>
         {f !== untouched && <p className="text-center text-[0.8125rem] text-[var(--on-ink-2)]">Rascunho salvo neste aparelho. Pode sair e voltar.</p>}
       </section>

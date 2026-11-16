@@ -142,7 +142,8 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
           </section>
 
           <footer className="break-inside-avoid border-t border-[var(--line)] pt-4 text-center text-sm text-[var(--text-2)]">
-            Obrigado pela confiança! Qualquer dúvida, fale com a {tenant.name}.
+            ORÇAMENTO GERADO POR{" "}
+            <a href="https://gestaosuperheroi.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent)] underline">https://gestaosuperheroi.vercel.app/</a>
           </footer>
         </article>
       </div>
