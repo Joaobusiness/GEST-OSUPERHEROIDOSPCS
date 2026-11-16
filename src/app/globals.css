@@ -156,6 +156,16 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   .input::placeholder { color: var(--text-3); }
   .input:disabled { opacity: .5; background: var(--bg); cursor: not-allowed; }
 
+  /* Configurações no estilo Instagram: cada campo é uma caixa arredondada com o rótulo pequeno em cima e o valor embaixo. */
+  .ig [data-field] > label.field { gap: 0; padding: .5rem 1rem .625rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); transition: border-color var(--duration-quick) var(--ease-out), box-shadow var(--duration-quick) var(--ease-out); }
+  .ig [data-field] > label.field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .ig [data-field] .label { font-size: .75rem; font-weight: 500; color: var(--text-2); }
+  .ig [data-field] .input { min-height: 0; padding: .125rem 0 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-weight: 500; }
+  .ig [data-field] .input:focus { box-shadow: none; }
+  .ig [data-field]:has([aria-invalid="true"]) > label.field { border-color: var(--bad); }
+  .ig fieldset:disabled [data-field] > label.field { background: var(--bg); }
+  .ig [data-field] > .hint, .ig [data-field] > .err { padding: 0 .5rem; }
+
   .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .1875rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: var(--bg); color: var(--text-2); }
   .chip-ok { background: var(--ok-soft); color: var(--ok); }
   .chip-warn { background: var(--warn-soft); color: var(--warn); }

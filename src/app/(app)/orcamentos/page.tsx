@@ -40,8 +40,8 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
               <Link href={`/orcamentos/${q.id}`} className="list-row">
                 <Avatar name={q.customer.name} />
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 font-semibold"><span className="num">{q.number}</span><span className="text-sm font-medium text-[var(--text-3)]">rev. {q.revision}</span></p>
-                  <p className="truncate text-sm text-[var(--text-2)]">{q.customer.name}</p>
+                  <p className="truncate text-base font-bold">{q.customer.name}</p>
+                  <p className="flex items-center gap-2 text-sm text-[var(--text-2)]"><span className="num">{q.number}</span><span className="text-[var(--text-3)]">rev. {q.revision}</span></p>
                   <p className="text-sm text-[var(--text-3)]">{q.validUntil ? `Válido até ${dateBR(q.validUntil, tenant.timezone)}` : `Criado ${dateBR(q.createdAt, tenant.timezone)}`}</p>
                 </div>
                 <div className="grid shrink-0 justify-items-end gap-1">

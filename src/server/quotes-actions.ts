@@ -7,7 +7,7 @@ import { done, fail, moneyStr, optional, parse, uuid, ymd, type ActionState } fr
 import { requireAuth } from "./auth";
 import { PricingError } from "@/lib/pricing";
 import { DomainError } from "./domain";
-import { approveQuote, cancelQuote, rejectQuote, saveQuote, sendQuote } from "./quotes";
+import { approveQuote, cancelQuote, deleteQuote, rejectQuote, saveQuote, sendQuote } from "./quotes";
 import { itemsField } from "./line-items";
 
 async function wrap(fn: () => Promise<ActionState | void>): Promise<ActionState> {
@@ -73,4 +73,15 @@ export async function cancelAction(_: ActionState, fd: FormData): Promise<Action
   const r = await wrap(async () => { await cancelQuote(db, p.data.id); });
   touch(p.data.id);
   return r.ok ? done("Orçamento cancelado.") : r;
+}
+
+export async function deleteAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const p = parse(idOnly, fd);
+  if ("state" in p) return p.state;
+  const { db } = await requireAuth();
+  const r = await wrap(async () => { await deleteQuote(db, p.data.id); });
+  if (!r.ok) return r;
+  revalidatePath("/orcamentos");
+  revalidatePath("/financeiro");
+  redirect("/orcamentos");
 }

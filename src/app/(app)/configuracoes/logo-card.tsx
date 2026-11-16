@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImageUp, Trash2 } from "lucide-react";
-import { ActionForm, SubmitButton } from "@/components/form";
+import { useFormStatus } from "react-dom";
+import { Loader2 } from "lucide-react";
+import { ActionForm } from "@/components/form";
 import { updateLogoAction } from "@/server/settings-actions";
 
 const MAX_SIDE = 480;
@@ -24,45 +25,48 @@ async function shrink(file: File): Promise<string> {
   throw new Error("Imagem pesada demais. Tente outra.");
 }
 
-export function LogoCard({ current, isAdmin }: { current: string; isAdmin: boolean }) {
+function Picker({ onPick }: { onPick: (f?: File) => void }) {
+  const { pending } = useFormStatus();
+  return (
+    <label className="btn btn-primary btn-sm cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]" aria-busy={pending}>
+      {pending ? <><Loader2 size={16} className="animate-spin" aria-hidden /> Enviando…</> : "Mudar logo"}
+      <input type="file" accept="image/png,image/jpeg,image/webp" disabled={pending} className="sr-only" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ""; }} />
+    </label>
+  );
+}
+
+/** Perfil no estilo Instagram: logo + nome + "Mudar logo". Escolher a imagem já salva; não existe botão separado. */
+export function ProfileCard({ current, name, email, isAdmin }: { current: string; name: string; email: string; isAdmin: boolean }) {
   const [logo, setLogo] = useState(current);
+  const [prev, setPrev] = useState(current);
+  if (prev !== current) { setPrev(current); setLogo(current); }
   const [err, setErr] = useState("");
   const hidden = useRef<HTMLInputElement>(null);
+  const send = (v: string) => { if (hidden.current) { hidden.current.value = v; hidden.current.form?.requestSubmit(); } };
   const pick = async (file?: File) => {
     if (!file) return;
     setErr("");
     if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { setErr("Use uma imagem PNG, JPG ou WebP."); return; }
-    try { const d = await shrink(file); setLogo(d); if (hidden.current) hidden.current.value = d; }
+    try { const d = await shrink(file); setLogo(d); send(d); }
     catch (e) { setErr(e instanceof Error ? e.message : "Não consegui ler essa imagem."); }
   };
   return (
-    <section className="card card-pad grid gap-4">
-      <div>
-        <h2>Logo da empresa</h2>
-        <p className="hint mt-1">Aparece no topo do PDF do orçamento. PNG, JPG ou WebP.</p>
-      </div>
-      <ActionForm action={updateLogoAction}>
-        <input ref={hidden} type="hidden" name="logo" defaultValue={current} />
-        <div className="flex h-28 items-center justify-center overflow-hidden rounded-[var(--r-md)] border border-dashed border-[var(--line)] bg-white p-3">
+    <ActionForm action={updateLogoAction}>
+      <input ref={hidden} type="hidden" name="logo" defaultValue={current} />
+      <div className="flex items-center gap-4 rounded-[var(--r-lg)] bg-[var(--card)] p-4 shadow-[var(--shadow-1)]">
+        <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--line)] bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {logo ? <img src={logo} alt="Prévia do logo" className="h-auto max-h-[5.5rem] w-auto max-w-full object-contain" /> : <p className="text-sm text-[var(--text-2)]">Nenhum logo ainda</p>}
+          {logo ? <img src={logo} alt="Logo da empresa" className="size-full object-contain p-1" /> : <span aria-hidden className="text-2xl font-bold text-[var(--accent)]">{name.trim().charAt(0).toUpperCase() || "?"}</span>}
         </div>
-        {err && <p role="alert" className="err">{err}</p>}
-        {isAdmin && (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="btn btn-quiet cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)] sm:col-span-1">
-              <ImageUp size={18} aria-hidden /> Escolher imagem
-              <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
-            </label>
-            <SubmitButton>Salvar logo</SubmitButton>
-            {logo && (
-              <button type="submit" className="btn btn-quiet" onClick={() => { if (hidden.current) hidden.current.value = ""; setLogo(""); }}>
-                <Trash2 size={18} aria-hidden /> Remover logo
-              </button>
-            )}
-          </div>
-        )}
-      </ActionForm>
-    </section>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-lg font-bold">{name}</p>
+          <p className="truncate text-sm text-[var(--text-2)]">{email}</p>
+          {isAdmin && logo && <button type="button" className="mt-1 min-h-11 text-sm font-semibold text-[var(--bad)]" onClick={() => { setLogo(""); send(""); }}>Remover logo</button>}
+        </div>
+        {isAdmin && <Picker onPick={(f) => void pick(f)} />}
+      </div>
+      {!logo && <p className="hint">O logo aparece no topo do PDF do orçamento. PNG, JPG ou WebP.</p>}
+      {err && <p role="alert" className="err">{err}</p>}
+    </ActionForm>
   );
 }
