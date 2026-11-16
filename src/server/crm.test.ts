@@ -1,10 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { makeTenant } from "../../tests/helpers";
-import { createCustomer, customerTimeline, deleteCustomer, getCustomer, listCustomers, saveDevice, touchLastContact } from "./crm";
+import { createCustomer, customerTimeline, deleteCustomer, getCustomer, listCustomers, listDebtors, saveDevice, setDebt, touchLastContact } from "./crm";
 
 const base = { phone: "+5565999990000", marketingConsent: false, marketingOptOut: false };
 
 describe("crm", () => {
+  it("debt reminder: on lists the customer, off removes it from the list but keeps the customer", async () => {
+    const a = await makeTenant("crm-debt");
+    const b = await makeTenant("crm-debt-b");
+    const maria = await createCustomer(a.db, { ...base, name: "Maria" });
+    const other = await createCustomer(b.db, { ...base, name: "Outra empresa" });
+    await setDebt(a.db, maria.id, { owes: true, amount: "150.50", dueDate: new Date("2026-12-05T00:00:00Z") });
+    await setDebt(b.db, other.id, { owes: true, amount: "10", dueDate: new Date("2026-12-01T00:00:00Z") });
+    const list = await listDebtors(a.db);
+    expect(list.map((c) => [c.name, c.owedAmount?.toString(), c.owedDueDate?.toISOString().slice(0, 10)])).toEqual([["Maria", "150.5", "2026-12-05"]]);
+    await setDebt(a.db, maria.id, { owes: false });
+    expect(await listDebtors(a.db)).toHaveLength(0);
+    const kept = await getCustomer(a.db, maria.id);
+    expect([kept.name, kept.owes, kept.owedAmount, kept.owedDueDate]).toEqual(["Maria", false, null, null]);
+    expect(await listDebtors(b.db)).toHaveLength(1);
+  });
+
   it("paginates customers: 20 per page, every customer exactly once, page clamped", async () => {
     const { db } = await makeTenant("crm-pg");
     for (let i = 0; i < 45; i++) await createCustomer(db, { ...base, name: `Cliente ${String(i).padStart(2, "0")}` });

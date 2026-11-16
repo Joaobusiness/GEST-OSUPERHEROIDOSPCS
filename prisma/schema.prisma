@@ -137,6 +137,10 @@ model Customer {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   deletedAt        DateTime?
+  // lembrete "cliente está devendo": um valor e uma data combinada, nada mais
+  owes             Boolean               @default(false)
+  owedAmount       Decimal?              @db.Decimal(12, 2)
+  owedDueDate      DateTime?             @db.Date
   devices          CustomerDevice[]
   quotes           Quote[]
   interactions     CustomerInteraction[]

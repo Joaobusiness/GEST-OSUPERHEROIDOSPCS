@@ -7,6 +7,7 @@ import { requireAuth } from "@/server/auth";
 import { CrmError, addressText, getCustomer, inactiveDays } from "@/server/crm";
 import { deleteCustomerAction } from "@/server/crm-actions";
 import { ConfirmButton } from "../confirm-button";
+import { DebtCard } from "./debt-card";
 
 export const metadata = { title: "Cliente" };
 
@@ -45,6 +46,8 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
       <a href={whatsappLink(c.whatsapp ?? c.phone, "")} target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full sm:w-auto">
         <MessageCircle size={20} aria-hidden /> Abrir WhatsApp
       </a>
+
+      <DebtCard key={`${c.owes}-${c.owedAmount}-${c.owedDueDate}`} id={id} owes={c.owes} amount={c.owedAmount?.toFixed(2).replace(".", ",") ?? ""} dueDate={c.owedDueDate?.toISOString().slice(0, 10) ?? ""} />
 
       <section className="mt-8 grid gap-3" aria-labelledby="servicos">
         <div className="flex items-baseline justify-between gap-3">
