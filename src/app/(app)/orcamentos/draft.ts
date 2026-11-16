@@ -3,7 +3,7 @@
 import type { Line } from "@/server/line-items";
 
 export type QuoteDraftData = {
-  customerId: string; services: Line[]; products: Line[]; discount: string;
+  customerId: string; services: Line[]; products: Line[]; discount: string; extraFee: string;
   uberOn: boolean; uberCost: string;
   notes: string; validUntil: string; executionDays: string; paymentTerms: string; warranty: string;
 };

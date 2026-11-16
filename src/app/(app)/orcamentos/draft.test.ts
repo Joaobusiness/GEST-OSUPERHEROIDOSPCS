@@ -11,7 +11,7 @@ function memory() {
 const ssd: Line = { kind: "PART", description: "SSD 480 GB", quantity: "1", unitCost: "218", unitPrice: "348.80" };
 const data = (over: Partial<QuoteDraftData> = {}): QuoteDraftData => ({
   customerId: "c1", services: [{ kind: "LABOR", description: "Formatação", quantity: "1", unitCost: "0", unitPrice: "120" }], products: [ssd],
-  discount: "10", uberOn: true, uberCost: "30", notes: "Troca do SSD", validUntil: "2026-12-01", executionDays: "2", paymentTerms: "Pix", warranty: "90 dias", ...over,
+  discount: "10", extraFee: "0", uberOn: true, uberCost: "30", notes: "Troca do SSD", validUntil: "2026-12-01", executionDays: "2", paymentTerms: "Pix", warranty: "90 dias", ...over,
 });
 const key = draftKey("t1", "u1");
 

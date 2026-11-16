@@ -99,7 +99,7 @@ function Calc({ initial, start, draftKey, defaultUberCost }: { initial: SimInput
               <Row k="Preço de venda" v={brl(r.suggestedPrice)} />
               {s.uberOn && <Row k="Uber" v={brl(r.uberCharge)} />}
               <Row k="Você gasta" v={brl(r.totalCost)} />
-              <Row k="Lucro bruto" v={brl(r.profit)} strong />
+              <Row k="Lucro total" v={brl(r.profit)} strong />
             </dl>
             <Link href={quoteHref} className="btn bg-white text-[var(--accent-press)] shadow-[0_8px_20px_rgba(0,0,0,.18)]"><FilePlus2 size={18} aria-hidden /> Criar orçamento com este preço</Link>
           </div>
