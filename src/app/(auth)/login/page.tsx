@@ -16,9 +16,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <Field name="password" label="Senha"><Input name="password" type="password" autoComplete="current-password" required /></Field>
         <SubmitButton pendingText="Entrando…">Entrar</SubmitButton>
       </ActionForm>
-      <div className="mt-5 grid gap-2 text-center text-[0.9375rem]">
-        <Link href="/esqueci-senha" className="font-medium text-[var(--accent)] underline-offset-4 hover:underline">Esqueci minha senha</Link>
-        <p className="text-[var(--text-2)]">Ainda não tem conta? <Link href="/cadastro" className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline">Criar conta</Link></p>
+      <div className="mt-3 grid justify-items-center text-[0.9375rem]">
+        <Link href="/esqueci-senha" className="link">Esqueci minha senha</Link>
+        <p className="text-[var(--text-2)]">Ainda não tem conta? <Link href="/cadastro" className="link">Criar conta</Link></p>
       </div>
     </>
   );

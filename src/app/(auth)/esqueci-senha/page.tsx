@@ -13,7 +13,7 @@ export default function ForgotPage() {
         <Field name="email" label="E-mail"><Input name="email" type="email" inputMode="email" autoComplete="email" required /></Field>
         <SubmitButton pendingText="Enviando…">Enviar link</SubmitButton>
       </ActionForm>
-      <p className="mt-5 text-center"><Link href="/login" className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline">Voltar ao login</Link></p>
+      <p className="mt-5 text-center"><Link href="/login" className="link">Voltar ao login</Link></p>
     </>
   );
 }

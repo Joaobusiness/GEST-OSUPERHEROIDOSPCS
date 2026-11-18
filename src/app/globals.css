@@ -170,6 +170,9 @@ h3 { font-size: 1.0625rem; font-weight: 600; }
   .ig fieldset:disabled [data-field] > label.field { background: var(--bg); }
   .ig [data-field] > .hint, .ig [data-field] > .err { padding: 0 .5rem; }
 
+  /* Link de texto: sempre sublinhado (não depende só da cor) e com área de toque de 44px. */
+  .link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+
   .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .1875rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: var(--bg); color: var(--text-2); }
   .chip-ok { background: var(--ok-soft); color: var(--ok); }
   .chip-warn { background: var(--warn-soft); color: var(--warn); }

@@ -16,7 +16,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   await requireSuperAdmin(); // the layout check alone is not enough: pages and actions can be reached without it
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [tenants, plans] = await Promise.all([listTenants(), prisma.subscriptionPlan.findMany({ orderBy: { name: "asc" } })]);
+  const [tenants, plans] = await Promise.all([listTenants({ id }), prisma.subscriptionPlan.findMany({ orderBy: { name: "asc" } })]);
   const t = tenants.find((x) => x.id === id);
   if (!t) notFound();
   const suspended = t.status === "SUSPENDED";
