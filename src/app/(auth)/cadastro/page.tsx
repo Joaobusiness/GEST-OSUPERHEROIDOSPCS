@@ -17,7 +17,7 @@ export default function RegisterPage() {
         <Field name="password" label="Senha" hint="Mínimo de 8 caracteres."><Input name="password" type="password" autoComplete="new-password" minLength={8} required /></Field>
         <SubmitButton pendingText="Criando…">Criar conta</SubmitButton>
       </ActionForm>
-      <p className="mt-5 text-center text-[0.9375rem] text-[var(--text-2)]">Já tem conta? <Link href="/login" className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline">Entrar</Link></p>
+      <p className="mt-5 text-center text-[0.9375rem] text-[var(--text-2)]">Já tem conta? <Link href="/login" className="link">Entrar</Link></p>
     </>
   );
 }

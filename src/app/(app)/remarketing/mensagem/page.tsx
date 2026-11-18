@@ -23,7 +23,7 @@ export default async function MensagemPage({ searchParams }: { searchParams: Pro
   if (!tpl) return (
     <>
       <PageHeader title="Mensagem" sub={customer.name} />
-      <p>Crie um modelo de mensagem primeiro. <Link href="/remarketing/modelos" className="font-semibold text-[var(--accent)] underline">Ir para modelos</Link></p>
+      <p>Crie um modelo de mensagem primeiro. <Link href="/remarketing/modelos" className="link">Ir para modelos</Link></p>
     </>
   );
   const blocked = tpl.kind === "MARKETING" ? marketingBlock(customer) : undefined;
@@ -32,7 +32,7 @@ export default async function MensagemPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Mensagem" sub={`${customer.name} · ${formatPhone(customer.whatsapp ?? customer.phone)}`} />
-      <form className="mb-5 flex items-end gap-2">
+      <form className="mb-5 grid gap-1 sm:flex sm:items-end sm:gap-2">
         <input type="hidden" name="cliente" value={customer.id} />
         {sp.seg && <input type="hidden" name="seg" value={sp.seg} />}
         {sp.c && <input type="hidden" name="c" value={sp.c} />}
@@ -41,7 +41,7 @@ export default async function MensagemPage({ searchParams }: { searchParams: Pro
             <Select name="modelo" defaultValue={tpl.id}>{templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.kind === "MARKETING" ? "marketing" : "operacional"})</option>)}</Select>
           </Field>
         </div>
-        <button className="btn btn-quiet mb-6 shrink-0">Usar</button>
+        <button className="btn btn-quiet shrink-0 sm:mb-6">Usar modelo</button>
       </form>
       <h2 className="mb-2">Prévia</h2>
       <p className="card whitespace-pre-wrap p-5 text-[0.9375rem]">{text}</p>

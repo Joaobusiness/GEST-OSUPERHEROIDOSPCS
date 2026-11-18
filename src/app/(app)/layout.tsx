@@ -9,6 +9,8 @@ import { logoutAction } from "@/server/auth-actions";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { tenant, user } = await requireAuth();
   return (
+    <>
+    <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-full focus:bg-[var(--card)] focus:px-4 focus:py-3 focus:font-semibold">Pular para o conteúdo</a>
     <div className="lg:grid lg:min-h-dvh lg:grid-cols-[17rem_1fr]">
       <aside className="hidden bg-[var(--ink)] p-4 text-[var(--on-ink)] lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-4 lg:overflow-y-auto lg:overscroll-contain">
         <Link href="/" aria-label="Início"><Logo height={72} /></Link>
@@ -24,9 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/" aria-label="Início"><Logo height={44} priority /></Link>
           <p className="min-w-0 truncate text-sm font-medium text-[var(--on-ink-2)]">{tenant.name}</p>
         </header>
-        <main className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4 lg:px-8 lg:pt-8">{children}</main>
+        <main id="conteudo" tabIndex={-1} className="mx-auto outline-none w-full max-w-5xl px-4 pb-10 pt-4 lg:px-8 lg:pt-8">{children}</main>
       </div>
       <TabBar />
     </div>
+    </>
   );
 }

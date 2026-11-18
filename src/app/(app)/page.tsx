@@ -90,7 +90,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <h2 id="resumo" className="mb-2">Resumo</h2>
         <ul className="card overflow-hidden">
           <Kpi href="/orcamentos" label="Orçamentos esperando resposta" sub={`${money(d.quotesWaiting.total)} em propostas`} value={String(d.quotesWaiting.count)} />
-          <Kpi href="/remarketing" label="Clientes para contatar" sub={`Faz mais de ${d.inactiveDays} dias que não falam com você`} value={String(d.toContact)} />
+          {!shown.some((x) => x.key === "inactive") && <Kpi href="/remarketing" label="Clientes para contatar" sub={`Faz mais de ${d.inactiveDays} dias que não falam com você`} value={String(d.toContact)} />}
           <Kpi label="Ticket médio" sub="Média dos orçamentos aprovados no período" value={d.avgTicket ? money(d.avgTicket) : "Sem dados"} />
         </ul>
       </section>

@@ -17,7 +17,7 @@ export default function Page() {
       <p className="mt-2">Confirmação de tratamento, acesso, correção, anonimização, portabilidade, eliminação e revogação de consentimento (Lei 13.709/2018, LGPD). Para exercer, fale com a assistência que atendeu você ou com o operador da plataforma.</p>
       <h2 className="mt-6">Segurança</h2>
       <p className="mt-2">Senhas armazenadas com hash, sessões por cookie protegido e isolamento de dados entre empresas.</p>
-      <p className="mt-8"><Link href="/" className="inline-flex min-h-11 items-center font-semibold text-[var(--accent)]">Voltar ao sistema</Link></p>
+      <p className="mt-8"><Link href="/" className="link">Voltar ao sistema</Link></p>
     </main>
   );
 }

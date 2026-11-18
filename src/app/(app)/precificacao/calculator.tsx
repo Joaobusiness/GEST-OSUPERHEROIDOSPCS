@@ -87,6 +87,8 @@ function Calc({ initial, start, draftKey, defaultUberCost }: { initial: SimInput
         {s !== initial && <button type="button" className="btn btn-quiet btn-sm !min-h-11 justify-self-start" onClick={() => setS(initial)}>Limpar conta</button>}
       </section>
 
+      {/* Celular: o resultado fica abaixo dos campos; esta faixa mantém o preço à vista enquanto digita. */}
+      {r && <p aria-hidden className="card-ink sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.5rem)] z-20 flex items-baseline justify-between gap-3 !rounded-full px-5 py-2.5 lg:hidden"><span className="text-sm font-bold text-[var(--on-ink-2)]">O cliente paga</span><span className="num text-xl font-bold">{brl(r.finalPrice)}</span></p>}
       <section className="grid gap-4 lg:sticky lg:top-4" aria-label="Resultado">
         {out.error && <p role="alert" className="chip chip-bad !rounded-[var(--r-md)] !px-3 !py-2 !text-sm">{out.error}</p>}
         {r && (

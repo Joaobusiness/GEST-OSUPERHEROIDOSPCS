@@ -7,17 +7,26 @@ import { UserError } from "@/server/settings";
 // Super Admin area: cross-tenant on purpose, so it uses prisma directly. It only ever reads
 // counts and subscription data of other tenants, never customers or money.
 
-export async function listTenants() {
-  const [tenants, customers, members] = await Promise.all([
-    prisma.tenant.findMany({
-      orderBy: { createdAt: "desc" },
+export type TenantFilter = { q?: string; id?: string; skip?: number; take?: number };
+const tenantWhere = (f: TenantFilter) => ({
+  ...(f.id ? { id: f.id } : {}),
+  ...(f.q?.trim() ? { OR: [{ name: { contains: f.q.trim(), mode: "insensitive" as const } }, { email: { contains: f.q.trim(), mode: "insensitive" as const } }] } : {}),
+});
+export const countTenants = (q?: string) => prisma.tenant.count({ where: tenantWhere({ q }) });
+
+export async function listTenants(f: TenantFilter = {}) {
+  const tenants = await prisma.tenant.findMany({
+      where: tenantWhere(f), skip: f.skip, take: f.take,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       select: {
         id: true, name: true, email: true, status: true, createdAt: true,
         subscriptions: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, expiresAt: true, plan: { select: { name: true } } } },
       },
-    }),
-    prisma.customer.groupBy({ by: ["tenantId"], where: { deletedAt: null }, _count: { _all: true } }),
-    prisma.tenantUser.groupBy({ by: ["tenantId"], _count: { _all: true } }),
+  });
+  const inPage = { tenantId: { in: tenants.map((t) => t.id) } }; // counts only for the rows shown
+  const [customers, members] = await Promise.all([
+    prisma.customer.groupBy({ by: ["tenantId"], where: { deletedAt: null, ...inPage }, _count: { _all: true } }),
+    prisma.tenantUser.groupBy({ by: ["tenantId"], where: inPage, _count: { _all: true } }),
   ]);
   const count = (rows: { tenantId: string; _count: { _all: number } }[]) => new Map(rows.map((r) => [r.tenantId, r._count._all]));
   const [c, m] = [count(customers), count(members)];

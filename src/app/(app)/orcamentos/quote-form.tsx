@@ -182,6 +182,10 @@ function Form({ customers, settings, initial, revisesDecided, draftKey, base, se
         <Field name="warranty" label="Garantia"><Input maxLength={500} {...text("warranty")} placeholder="Ex.: 90 dias" /></Field>
       </Card>
 
+      {/* Celular: o total real fica no fim de um formulário longo; esta faixa mantém o valor à vista enquanto preenche. */}
+      <p aria-hidden className="card-ink sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.5rem)] z-20 -mt-1 flex items-baseline justify-between gap-3 !rounded-full px-5 py-2.5 lg:hidden">
+        <span className="text-sm font-bold uppercase tracking-wide text-[var(--on-ink-2)]">Total</span><span className="num text-xl font-bold">{money(t.totalAmount)}</span>
+      </p>
       <section className="card-ink grid gap-3 p-5" aria-label="Total do orçamento">
         <div className="grid gap-3" aria-live="polite">
           <p className="flex flex-wrap items-baseline justify-between gap-x-3"><span className="text-sm font-bold uppercase tracking-wide text-[var(--on-ink-2)]">Total geral</span><span className="num text-3xl font-bold">{money(t.totalAmount)}</span></p>

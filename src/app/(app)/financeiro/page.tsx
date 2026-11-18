@@ -130,8 +130,8 @@ export default async function Financeiro({ searchParams }: { searchParams: Promi
                     <span className={`tile ${inc ? "tile-ok" : "tile-bad"}`}><Icon size={20} aria-hidden /></span>
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-2 break-words font-medium">{r.description}</span>
-                      <span className="block truncate text-sm text-[var(--text-2)]">
-                        {r.category.name} · vence {dateBR(r.dueDate, "UTC")}{who ? ` · ${who}` : ""}
+                      <span className="block text-sm text-[var(--text-2)]">
+                        <span className="block">vence {dateBR(r.dueDate, "UTC")}{who ? ` · ${who}` : ""}</span><span className="block truncate">{r.category.name}</span>
                       </span>
                     </span>
                     <span className="grid shrink-0 justify-items-end gap-1">

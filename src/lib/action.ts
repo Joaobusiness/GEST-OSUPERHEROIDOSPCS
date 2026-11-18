@@ -21,7 +21,7 @@ export function parse<T extends z.ZodType>(schema: T, fd: FormData): { data: z.i
   const r = schema.safeParse(raw);
   if (r.success) return { data: r.data };
   const fieldErrors: Record<string, string> = {};
-  for (const i of r.error.issues) fieldErrors[String(i.path[0] ?? "_")] ??= i.message;
+  for (const i of r.error.issues) fieldErrors[String(i.path[0] ?? "_")] ??= i.code === "invalid_type" ? "Escolha uma opção." : i.message; // campo ausente (select sem escolha) vinha em inglês
   return { state: fail("Confira os campos destacados.", fieldErrors) };
 }
 

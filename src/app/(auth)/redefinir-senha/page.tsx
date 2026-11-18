@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionForm, Field, Input, SubmitButton } from "@/components/form";
 import { resetPasswordAction } from "@/server/auth-actions";
 
@@ -5,6 +6,13 @@ export const metadata = { title: "Nova senha" };
 
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
+  if (!token) return (
+    <>
+      <h1 className="mb-2">Link incompleto</h1>
+      <p className="mb-4 text-[0.9375rem] text-[var(--text-2)]">Abra o link inteiro que enviamos ou peça um novo.</p>
+      <Link href="/esqueci-senha" className="btn btn-primary w-full">Pedir novo link</Link>
+    </>
+  );
   return (
     <>
       <h1 className="mb-5">Criar nova senha</h1>

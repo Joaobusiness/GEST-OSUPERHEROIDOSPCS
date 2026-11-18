@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { makeCustomer, makeTenant } from "../../tests/helpers";
-import { listTenants, platformStats, setSubscription, setTenantStatus } from "./admin";
+import { countTenants, listTenants, platformStats, setSubscription, setTenantStatus } from "./admin";
 
 describe("admin", () => {
   it("listing exposes counts only, never tenant business data", async () => {
@@ -14,6 +14,15 @@ describe("admin", () => {
       "createdAt", "customerCount", "email", "expiresAt", "id", "name", "planName", "status", "subscriptionStatus", "userCount",
     ]);
     expect(JSON.stringify(row)).not.toContain("Secreto");
+  });
+
+  it("search and paging narrow the list and the counts", async () => {
+    const { tenantId } = await makeTenant("pag");
+    const name = (await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })).name;
+    expect(await countTenants(name)).toBe(1);
+    expect((await listTenants({ q: name.toUpperCase(), take: 5 })).map((t) => t.id)).toEqual([tenantId]);
+    expect(await listTenants({ q: name, skip: 1, take: 5 })).toEqual([]);
+    expect(await countTenants("zzz-nao-existe")).toBe(0);
   });
 
   it("suspend flips status and kills sessions; reactivate restores", async () => {

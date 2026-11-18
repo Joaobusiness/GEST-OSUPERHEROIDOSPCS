@@ -17,7 +17,7 @@ export default function Page() {
       <p className="mt-2">A conta pode ser suspensa por falta de pagamento ou uso indevido. Os dados podem ser exportados antes do encerramento mediante solicitação.</p>
       <h2 className="mt-6">Responsabilidade</h2>
       <p className="mt-2">Os cálculos de preço são uma ajuda; confira os valores antes de enviar um orçamento. O serviço é fornecido no estado em que se encontra, sem garantia de disponibilidade contínua.</p>
-      <p className="mt-8"><Link href="/" className="inline-flex min-h-11 items-center font-semibold text-[var(--accent)]">Voltar ao sistema</Link></p>
+      <p className="mt-8"><Link href="/" className="link">Voltar ao sistema</Link></p>
     </main>
   );
 }

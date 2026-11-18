@@ -1,13 +1,20 @@
 import { requireSuperAdmin } from "@/server/auth";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { Empty, PageHeader, Status, dateBR, money } from "@/components/ui";
-import { listTenants, platformStats } from "@/server/admin";
+import { Empty, PageHeader, Pager, Status, dateBR, money } from "@/components/ui";
+import { Search } from "lucide-react";
+import { countTenants, listTenants, platformStats } from "@/server/admin";
 import { SUB, TENANT } from "./status";
 
-export default async function Page() {
+const SIZE = 20;
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; pg?: string }> }) {
   await requireSuperAdmin(); // the layout check alone is not enough: pages and actions can be reached without it
-  const [stats, tenants] = await Promise.all([platformStats(), listTenants()]);
+  const { q, pg } = await searchParams;
+  const total = await countTenants(q);
+  const pages = Math.max(1, Math.ceil(total / SIZE));
+  const page = Math.min(Math.max(1, Number.parseInt(pg ?? "1", 10) || 1), pages);
+  const [stats, tenants] = await Promise.all([platformStats(), listTenants({ q, skip: (page - 1) * SIZE, take: SIZE })]);
   const items: [string, string][] = [
     ["Empresas", String(stats.tenants)], ["Empresas ativas", String(stats.activeTenants)], ["Usuários", String(stats.users)],
     ["Receita mensal recorrente", money(stats.mrr)],
@@ -23,8 +30,12 @@ export default async function Page() {
           </div>
         ))}
       </dl>
+      <form role="search" className="relative mb-3">
+        <Search size={18} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+        <input className="input !pl-10" type="search" name="q" defaultValue={q} placeholder="Buscar por nome ou e-mail" aria-label="Buscar empresa" />
+      </form>
       {tenants.length === 0 ? (
-        <Empty title="Nenhuma empresa cadastrada" text="As empresas aparecem aqui quando criam uma conta." />
+        q ? <Empty title="Nenhuma empresa encontrada" text={`Nada para "${q}".`} href="/admin" cta="Limpar busca" /> : <Empty title="Nenhuma empresa cadastrada" text="As empresas aparecem aqui quando criam uma conta." />
       ) : (
         <ul className="card overflow-hidden">
           {tenants.map((t) => (
@@ -45,6 +56,7 @@ export default async function Page() {
           ))}
         </ul>
       )}
+      <Pager page={page} pages={pages} href={(n) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), pg: String(n) })}`} />
     </>
   );
 }

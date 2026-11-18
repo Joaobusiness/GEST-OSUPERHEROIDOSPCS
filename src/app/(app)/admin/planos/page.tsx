@@ -1,5 +1,5 @@
 import { requireSuperAdmin } from "@/server/auth";
-import { Empty, PageHeader } from "@/components/ui";
+import { Empty, PageHeader, money } from "@/components/ui";
 import { ActionForm, Field, Input, Select, SubmitButton } from "@/components/form";
 import { prisma } from "@/lib/db";
 import { savePlanAction, setPlanActiveAction } from "@/server/admin-actions";
@@ -32,22 +32,33 @@ export default async function Page() {
       <PageHeader title="Planos" sub="Alterar o preço não muda assinaturas já registradas, só o valor usado nos indicadores." />
       <div className="grid gap-6">
         {plans.length === 0 && <Empty title="Nenhum plano" text="Crie o primeiro plano abaixo." />}
-        {plans.map((p) => (
-          <section key={p.id} className="card card-pad grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2>{p.name}</h2>
-              <span className={p.isActive ? "chip chip-ok" : "chip"}>{p.isActive ? "Ativo" : "Inativo"}</span>
-            </div>
-            <ActionForm action={savePlanAction}><PlanFields p={p} /></ActionForm>
-            <ActionForm action={setPlanActiveAction}>
-              <input type="hidden" name="planId" value={p.id} />
-              <input type="hidden" name="active" value={String(!p.isActive)} />
-              {p.isActive
-                ? <ConfirmButton message={`Desativar ${p.name}? Novas empresas deixam de receber este plano.`}>Desativar plano</ConfirmButton>
-                : <SubmitButton className="btn btn-quiet btn-sm" pendingText="Ativando…">Ativar plano</SubmitButton>}
-            </ActionForm>
-          </section>
-        ))}
+        {plans.length > 0 && (
+          <ul className="card min-w-0 divide-y divide-[var(--line)]">
+            {plans.map((p) => (
+              <li key={p.id}>
+                <details>
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{p.name}</span>
+                      <span className="num block text-sm text-[var(--text-2)]">{money(p.price)} / {p.billingCycle === "YEARLY" ? "ano" : "mês"}</span>
+                    </span>
+                    <span className={p.isActive ? "chip chip-ok" : "chip"}>{p.isActive ? "Ativo" : "Inativo"}</span>
+                  </summary>
+                  <div className="grid gap-3 border-t border-[var(--line)] p-4">
+                    <ActionForm action={savePlanAction}><PlanFields p={p} /></ActionForm>
+                    <ActionForm action={setPlanActiveAction}>
+                      <input type="hidden" name="planId" value={p.id} />
+                      <input type="hidden" name="active" value={String(!p.isActive)} />
+                      {p.isActive
+                        ? <ConfirmButton message={`Desativar ${p.name}? Novas empresas deixam de receber este plano.`}>Desativar plano</ConfirmButton>
+                        : <SubmitButton className="btn btn-quiet btn-sm" pendingText="Ativando…">Ativar plano</SubmitButton>}
+                    </ActionForm>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        )}
         <section className="card card-pad grid gap-3">
           <h2>Novo plano</h2>
           <ActionForm action={savePlanAction} resetOnSuccess><PlanFields /></ActionForm>

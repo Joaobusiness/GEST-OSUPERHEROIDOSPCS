@@ -55,11 +55,11 @@ export default async function RemarketingPage({ searchParams }: { searchParams: 
           </div>
           {rows.map((r) => (
             <div key={r.customer.id} className={`grid gap-1 border-t border-[var(--line)] px-5 py-3 first:border-t-0 lg:items-center lg:gap-3 ${COLS}`}>
-              <Link href={`/clientes/${r.customer.id}`} className="min-w-0 truncate font-semibold">{r.customer.name}</Link>
-              <span className="text-sm lg:text-base">{formatPhone(r.customer.phone)}</span>
-              <span className="text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]">{r.lastServiceAt ? dateBR(r.lastServiceAt, tenant.timezone) : "Nunca"}</span>
-              <span className="truncate text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]">{r.lastService ?? "—"}</span>
-              <span className="text-sm lg:text-base"><span className="lg:hidden">Dias: </span>{r.daysInactive}</span>
+              <Link href={`/clientes/${r.customer.id}`} className="flex min-h-11 min-w-0 items-center font-semibold lg:min-h-0"><span className="truncate">{r.customer.name}</span></Link>
+              <span className="-mt-2 text-sm text-[var(--text-2)] lg:mt-0 lg:text-base lg:text-[var(--text)]">{formatPhone(r.customer.phone)}</span>
+              <span className="text-sm text-[var(--text-2)] lg:text-base lg:text-[var(--text)]"><span className="lg:hidden">Último atendimento: </span>{r.lastServiceAt ? dateBR(r.lastServiceAt, tenant.timezone) : "Nunca"}</span>
+              <span className={`truncate text-sm text-[var(--text-2)] lg:block lg:text-base lg:text-[var(--text)] ${r.lastService ? "" : "hidden"}`}>{r.lastService ?? "—"}</span>
+              <span className={`text-sm lg:block lg:text-base ${seg === "inactive" ? "hidden" : ""}`}><span className="lg:hidden">Dias: </span>{r.daysInactive}</span>
               <span className="text-sm lg:text-base">{r.opportunity}</span>
               {r.eligible ? (
                 <Link href={`/remarketing/mensagem?cliente=${r.customer.id}&seg=${seg}`} className="btn btn-primary btn-sm mt-1 lg:mt-0"><MessageCircle size={16} aria-hidden /> Abrir WhatsApp</Link>
